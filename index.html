@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Royal Chess</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-theme="classic">
+<div class="app">
+  <header>
+    <h1 class="logo">Royal <span>Chess</span></h1>
+    <p class="tagline">Full-rules engine &middot; Built-in AI &middot; Drag or tap to move</p>
+  </header>
+
+  <main>
+    <section class="board-area">
+      <div class="player-strip" id="strip-top">
+        <div class="avatar black-avatar" id="avatar-top"></div>
+        <div class="pinfo">
+          <div class="pname" id="name-top">Engine</div>
+          <div class="pcaptured" id="captured-top"></div>
+        </div>
+        <div class="clock" id="clock-top">10:00</div>
+      </div>
+
+      <div class="board-frame">
+        <div id="board" class="board"></div>
+      </div>
+
+      <div class="player-strip" id="strip-bottom">
+        <div class="avatar white-avatar" id="avatar-bottom"></div>
+        <div class="pinfo">
+          <div class="pname" id="name-bottom">You</div>
+          <div class="pcaptured" id="captured-bottom"></div>
+        </div>
+        <div class="clock" id="clock-bottom">10:00</div>
+      </div>
+
+      <div class="status-row">
+        <div class="status" id="status">White to move</div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="controls">
+        <button id="btn-new" class="btn primary">New game</button>
+        <button id="btn-undo" class="btn">Undo</button>
+        <button id="btn-flip" class="btn">Flip</button>
+        <button id="btn-hint" class="btn">Hint</button>
+        <button id="btn-sound" class="btn btn-sound">Sound: on</button>
+      </div>
+
+      <div class="eval-wrap" title="Engine evaluation">
+        <div class="eval-bar"><div id="eval-fill" class="eval-fill"></div></div>
+        <span id="eval-text" class="eval-text">0.0</span>
+      </div>
+
+      <div class="movelist-box">
+        <div class="movelist-head">Moves</div>
+        <div id="movelist" class="movelist"></div>
+      </div>
+
+      <div class="settings-row">
+        <label>Board
+          <select id="theme-select">
+            <option value="classic">Classic</option>
+            <option value="emerald">Emerald</option>
+            <option value="ocean">Ocean</option>
+            <option value="midnight">Midnight</option>
+          </select>
+        </label>
+      </div>
+    </aside>
+  </main>
+
+  <footer>Engine: negamax + alpha-beta + quiescence &middot; no libraries, no dependencies</footer>
+</div>
+
+<!-- Promotion modal -->
+<div id="promotion-modal" class="modal hidden">
+  <div class="modal-card">
+    <h3>Promote to</h3>
+    <div class="promo-row" id="promo-row"></div>
+  </div>
+</div>
+
+<!-- Game over modal -->
+<div id="gameover-modal" class="modal hidden">
+  <div class="modal-card">
+    <h3 id="gameover-title">Game over</h3>
+    <p id="gameover-text"></p>
+    <div class="modal-actions">
+      <button id="btn-rematch" class="btn primary">Rematch</button>
+      <button id="btn-close-gameover" class="btn">Review board</button>
+    </div>
+  </div>
+</div>
+
+<!-- New game modal -->
+<div id="newgame-modal" class="modal hidden">
+  <div class="modal-card">
+    <h3>New game</h3>
+    <div class="option-group">
+      <div class="option-label">Play as</div>
+      <div class="segmented" id="seg-color">
+        <button data-value="w" class="active">White</button>
+        <button data-value="b">Black</button>
+        <button data-value="r">Random</button>
+      </div>
+    </div>
+    <div class="option-group">
+      <div class="option-label">Difficulty</div>
+      <div class="segmented" id="seg-diff">
+        <button data-value="1">Easy</button>
+        <button data-value="2" class="active">Medium</button>
+        <button data-value="3">Hard</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button id="btn-start" class="btn primary">Start game</button>
+      <button id="btn-cancel-new" class="btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/engine.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
