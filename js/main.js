@@ -205,7 +205,7 @@
   }
 
   function renderEval() {
-    let ev = C.AI.evaluate(game.state);
+    const ev = C.AI.evaluate(game.state) * playerColor; // from the player's perspective
     const clamped = Math.max(-1000, Math.min(1000, ev));
     evalFillEl.style.width = (50 + clamped / 20) + '%';
     const p = (ev / 100);
@@ -430,6 +430,7 @@
     positionGhost(e.clientX, e.clientY);
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerCancel);
     if (e.cancelable) e.preventDefault();
   }
 
@@ -446,16 +447,20 @@
     positionGhost(e.clientX, e.clientY);
   }
 
-  function onPointerUp(e) {
+  function onPointerUp(e) { endDrag(e.clientX, e.clientY, false); }
+  function onPointerCancel() { endDrag(null, null, true); }
+
+  function endDrag(x, y, cancelled) {
     if (!dragState) return;
     const d = dragState;
     dragState = null;
     window.removeEventListener('pointermove', onPointerMove);
     window.removeEventListener('pointerup', onPointerUp);
+    window.removeEventListener('pointercancel', onPointerCancel);
     d.ghost.remove();
     d.pieceEl.classList.remove('dragging-origin');
-    if (!d.moved) return; // simple click — selection stays
-    const el = document.elementFromPoint(e.clientX, e.clientY);
+    if (cancelled || !d.moved) return; // click or interrupted gesture — snap back
+    const el = document.elementFromPoint(x, y);
     const sqEl = el && el.closest ? el.closest('.square') : null;
     if (sqEl) {
       const to = +sqEl.dataset.sq;
@@ -593,6 +598,8 @@
     btnUndo.addEventListener('click', () => {
       if (thinking || !game.state.history.length) return;
       closeModal(gameoverModal);
+      closeModal(promotionModal);
+      pendingPromo = null;
       over = null;
       hint = null;
       game.undo();
@@ -623,6 +630,12 @@
 
     themeSelect.addEventListener('change', () => {
       document.body.dataset.theme = themeSelect.value;
+    });
+
+    $('btn-cancel-promo').addEventListener('click', () => {
+      closeModal(promotionModal);
+      pendingPromo = null;
+      clearSelection();
     });
 
     $('btn-rematch').addEventListener('click', () => {
