@@ -610,7 +610,9 @@
     for (var i = 0; i < moves.length; i++) {
       var m = moves[i];
       makeMove(state, m);
-      var sc = -negamax(state, depth - 1, -Infinity, -alpha, 1, useQ);
+      // With noise active we need each move's TRUE score (a rising alpha window
+      // clamps weaker moves up to the current best, which would randomize the choice).
+      var sc = -negamax(state, depth - 1, -Infinity, noise ? Infinity : -alpha, 1, useQ);
       undoMove(state, m);
       if (noise) sc += (Math.random() * 2 - 1) * noise;
       if (sc > bestScore) {
@@ -625,7 +627,7 @@
   var AI = {
     // level: 1 easy, 2 medium, 3 hard
     search: function (state, level) {
-      if (level <= 1) return searchRoot(state, 1, 120, false);
+      if (level <= 1) return searchRoot(state, 1, 120, true);
       if (level === 2) return searchRoot(state, 2, 12, true);
       return searchRoot(state, 3, 0, true);
     },
