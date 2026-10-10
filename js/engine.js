@@ -658,11 +658,13 @@
   }
 
   var AI = {
-    // level: 1 easy, 2 medium, 3 hard
+    // Five playing strengths: 1 Beginner, 2 Casual, 3 Club, 4 Strong, 5 Expert
     search: function (state, level) {
-      if (level <= 1) return searchRoot(state, 1, 120, true);
-      if (level === 2) return searchRoot(state, 2, 12, true);
-      return searchRoot(state, 3, 0, true);
+      if (level <= 1) return searchRoot(state, 1, 180, true);
+      if (level === 2) return searchRoot(state, 2, 70, true);
+      if (level === 3) return searchRoot(state, 2, 10, true);
+      if (level === 4) return searchRoot(state, 3, 0, true);
+      return searchRoot(state, 4, 0, true);
     },
     evaluate: evaluate,
     mateIn: mateIn,
