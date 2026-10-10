@@ -707,10 +707,48 @@
     return accumulated;
   }
 
+  // ---- time bonuses ----
+  // A "ply" is a single player turn (1 = White's first move). After the level's
+  // warm-up (`after` plies), every `every`-th ply hands `seconds` to the side that
+  // just moved. The computer only earns these at levels 1 and 5.
+  var TIME_BONUS = [
+    null,
+    { every: 1, after: 10, seconds: 120 },    // L1: +2 min every ply from ply 11
+    { every: 5, after: 10, seconds: 600 },    // L2: +10 min every 5th ply after ply 10
+    { every: 10, after: 10, seconds: 1800 },  // L3: +30 min every 10th ply after ply 10
+    { every: 45, after: 0, seconds: 2700 },   // L4: +45 min every 45th ply
+    { every: 50, after: 0, seconds: 3000 }    // L5: +50 min every 50th ply
+  ];
+
+  function clampLevel(level) {
+    var n = Math.round(+level) || 1;
+    if (n < 1) n = 1;
+    if (n > 5) n = 5;
+    return n;
+  }
+
+  // seconds handed to the mover after ply number `ply`; 0 when no bonus is due
+  function timeBonus(level, ply) {
+    var r = TIME_BONUS[clampLevel(level)];
+    var p = Math.round(+ply) || 0;
+    if (p <= r.after) return 0;
+    if (r.every <= 0 || p % r.every !== 0) return 0;
+    return r.seconds;
+  }
+
+  // the computer only earns bonuses at levels 1 and 5
+  function computerGetsBonus(level) {
+    var n = clampLevel(level);
+    return n === 1 || n === 5;
+  }
+
   var Scoring = {
     levelMultiplier: levelMultiplier,
     finalScore: finalScore,
-    LEVEL_MULTIPLIER: LEVEL_MULTIPLIER
+    timeBonus: timeBonus,
+    computerGetsBonus: computerGetsBonus,
+    LEVEL_MULTIPLIER: LEVEL_MULTIPLIER,
+    TIME_BONUS: TIME_BONUS
   };
 
   var Chess = { Game: Game, AI: AI, perft: perft, generateMoves: generateMoves, Scoring: Scoring };
