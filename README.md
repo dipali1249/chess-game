@@ -22,7 +22,7 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Negamax search with alpha-beta pruning and MVV-LVA move ordering
 - Quiescence search to avoid shallow capture blunders
 - Piece-square-table evaluation with tapered king tables and bishop-pair bonus
-- Three difficulty levels: Easy / Medium / Hard
+- Three difficulty levels (Easy / Medium / Hard), set by the **Difficulty control on the game panel** — a live game setting you can change at any time, even mid-game, remembered between sessions
 
 ### Puzzle training (earn your hints)
 - 5 levels, 20 puzzles, every one machine-verified by the engine
@@ -40,6 +40,7 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Undo (takes back both your move and the engine's reply)
 - Promotion picker (with cancel), game-over and new-game dialogs
 - Play as White, Black, or random side; board flip
+- Engine strength lives in the game panel (not buried in the new-game dialog), so it applies to the game — puzzles keep their own separate level progression
 - Four board themes (Classic, Emerald, Ocean, Midnight)
 - Synthesized sound effects (move, capture, castle, check, game end) via Web Audio
 - Fully responsive layout for phones and desktops
