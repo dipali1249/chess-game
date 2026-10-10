@@ -83,6 +83,9 @@
   let puzzlePlies = 0;
   let puzzleBusy = false;
   let puzzleLast = null;
+  let puzzlePlayer = 1;        // the colour the solver plays in the current puzzle
+  let puzzleFlipped = false;   // show the puzzle from the solver's side
+  let puzzleLineIdx = 0;       // position in the stored line (goal 'line')
 
   init();
 
@@ -634,6 +637,8 @@
   }
 
   function levelUnlocked(n) {
+    const lvl = PUZZLES.find((x) => x.level === n);
+    if (lvl && lvl.bonus) return true;      // bonus levels are always open
     if (n <= 1) return true;
     const prev = levelPuzzles(n - 1);
     return prev.length > 0 && prev.every((p) => solvedIds[p.id]);
@@ -654,10 +659,11 @@
     puzzleBoardEl.innerHTML = '';
     puzzleSqEls = new Array(64);
     for (let v = 0; v < 64; v++) {
+      const sq = puzzleFlipped ? 63 - v : v;
       const row = v >> 3, col = v & 7;
       const el = document.createElement('div');
       el.className = 'square ' + (((row + col) % 2 === 0) ? 'light' : 'dark');
-      el.dataset.sq = v;
+      el.dataset.sq = sq;
       if (col === 0) {
         const r = document.createElement('span');
         r.className = 'coord rank'; r.textContent = 8 - row;
@@ -668,9 +674,9 @@
         f.className = 'coord file'; f.textContent = 'abcdefgh'[col];
         el.appendChild(f);
       }
-      el.addEventListener('pointerdown', () => onPuzzleClick(v));
+      el.addEventListener('pointerdown', () => onPuzzleClick(sq));
       puzzleBoardEl.appendChild(el);
-      puzzleSqEls[v] = el;
+      puzzleSqEls[sq] = el;
     }
     resizePuzzleBoard();
   }
@@ -720,11 +726,13 @@
 
   function renderPuzzle() { renderPuzzlePieces(); renderPuzzleHighlights(); }
 
-  function goalText(goal) {
+  function goalText(goal, p) {
     if (goal === 'mate1') return 'mate in 1';
     if (goal === 'mate2') return 'mate in 2';
     if (goal === 'mate3') return 'mate in 3';
-    return 'win the rook with a fork';
+    if (goal === 'winrook') return 'win the rook with a fork';
+    if (goal === 'line') return (p && p.player === 'b') ? "reconstruct Black's moves" : 'find the construction';
+    return 'solve it';
   }
 
   function puzzleStatus(msg, cls) {
@@ -786,26 +794,41 @@
     puzzlePhase = 'player';
     puzzleStage = p.goal === 'winrook' ? 'fork' : 'mate';
     puzzlePlies = p.goal === 'mate1' ? 1 : p.goal === 'mate2' ? 3 : p.goal === 'mate3' ? 5 : 0;
+    puzzleLineIdx = 0;
+    puzzlePlayer = p.player === 'b' ? -1 : (p.player === 'w' ? 1 : puzzleGame.state.turn);
+    puzzleFlipped = puzzlePlayer === -1;
+    const side = puzzlePlayer === 1 ? 'White' : 'Black';
     puzzleLevelLabel.textContent = 'Level ' + level + ' \u00b7 ' + lvl.name;
-    puzzleThemeEl.textContent = p.theme;
-    puzzleStatus('White to move \u2014 ' + goalText(p.goal), null);
+    puzzleThemeEl.textContent = p.theme + (p.note ? ' \u2014 ' + p.note : '');
+    puzzleStatus(side + ' to move \u2014 ' + goalText(p.goal, p), null);
     puzzleProgressText.textContent = 'Puzzle ' + (ps.indexOf(p) + 1) + ' of ' + ps.length;
     puzzleProgressFill.style.width = (levelSolvedCount(level) / ps.length * 100) + '%';
     btnPuzzleNext.disabled = !solvedIds[p.id];
-    resizePuzzleBoard();
+    buildPuzzleBoard();
     renderPuzzle();
     updateHintUI();
+    // 'line' puzzles can start with the opponent to move: play their move for them
+    if (p.goal === 'line' && puzzleGame.state.turn !== puzzlePlayer) {
+      puzzleBusy = true;
+      puzzleStatus('Opponent plays \u2014 watch', 'good');
+      setTimeout(() => {
+        playLineMove();
+        puzzleBusy = false;
+        puzzleStatus(side + ' to move \u2014 ' + goalText(p.goal, p), null);
+        renderPuzzle();
+      }, 600);
+    }
   }
 
   function onPuzzleClick(sq) {
     if (!puzzleGame || puzzleBusy || puzzlePhase !== 'player') return;
-    if (puzzleGame.state.turn !== 1) return;            // the player is always white in puzzles
+    if (puzzleGame.state.turn !== puzzlePlayer) return;   // only the solver's moves
     if (puzzleSelected >= 0 && puzzleMoves.some((m) => m.to === sq)) {
       attemptPuzzleMove(puzzleSelected, sq);
       return;
     }
     const p = puzzleGame.state.board[sq];
-    if (p && p > 0) {
+    if (p && (p > 0) === (puzzlePlayer > 0)) {
       puzzleSelected = sq;
       puzzleMoves = puzzleGame.moves(sq);
     } else {
@@ -830,6 +853,26 @@
     return -1;
   }
 
+  // play the next stored move (used by the 'line' puzzles for the opponent's replies)
+  function playLineMove() {
+    if (!currentPuzzle || !currentPuzzle.line) return;
+    const san = currentPuzzle.line[puzzleLineIdx];
+    if (!san) return;
+    for (const m of puzzleGame.moves()) {
+      puzzleGame.move(m.from, m.to, m.promotion || 0);
+      const got = puzzleGame.state.history[puzzleGame.state.history.length - 1].move.san;
+      puzzleGame.undo();
+      if (got === san) {
+        puzzleGame.move(m.from, m.to, m.promotion || 0);
+        puzzleLast = { from: m.from, to: m.to };
+        puzzleLineIdx++;
+        playSound('move');
+        renderPuzzle();
+        return;
+      }
+    }
+  }
+
   function attemptPuzzleMove(from, to) {
     const cands = puzzleGame.moves().filter((m) => m.from === from && m.to === to);
     if (!cands.length) return;
@@ -842,6 +885,22 @@
     puzzleSelected = -1;
     puzzleMoves = [];
     renderPuzzle();
+
+    if (goal === 'line') {
+      const played = puzzleGame.state.history[puzzleGame.state.history.length - 1].move.san;
+      if (played !== currentPuzzle.line[puzzleLineIdx]) return puzzleWrong();
+      puzzleLineIdx++;
+      if (puzzleLineIdx >= currentPuzzle.line.length) { solvePuzzle(); return; }
+      puzzleBusy = true;
+      puzzleStatus('Correct \u2014 keep going', 'good');
+      setTimeout(() => {
+        playLineMove();
+        puzzleBusy = false;
+        puzzleStatus('Your move \u2014 ' + goalText(goal, currentPuzzle), 'good');
+        renderPuzzle();
+      }, 420);
+      return;
+    }
 
     if (goal === 'winrook') {
       if (puzzleStage === 'fork') {
