@@ -684,7 +684,36 @@
     return n;
   }
 
-  var Chess = { Game: Game, AI: AI, perft: perft, generateMoves: generateMoves };
+  // ---------- game points ----------
+  // Five stake multipliers, one per difficulty level (1 Beginner .. 5 Expert).
+  var LEVEL_MULTIPLIER = [5, 10, 15, 20, 30];
+
+  function levelMultiplier(level) {
+    var n = Math.round(+level) || 1;
+    if (n < 1) n = 1;
+    if (n > 5) n = 5;
+    return LEVEL_MULTIPLIER[n - 1];
+  }
+
+  // Turn an accumulated point total into the game score.
+  //   outcome: 1 = the player won, -1 = the player lost, 0 = draw
+  //   win  -> accumulate x stake
+  //   loss -> accumulate / stake
+  //   draw -> accumulate x 1
+  function finalScore(accumulated, outcome, level) {
+    var m = levelMultiplier(level);
+    if (outcome > 0) return accumulated * m;
+    if (outcome < 0) return accumulated / m;
+    return accumulated;
+  }
+
+  var Scoring = {
+    levelMultiplier: levelMultiplier,
+    finalScore: finalScore,
+    LEVEL_MULTIPLIER: LEVEL_MULTIPLIER
+  };
+
+  var Chess = { Game: Game, AI: AI, perft: perft, generateMoves: generateMoves, Scoring: Scoring };
 
   global.Chess = Chess;
   if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
