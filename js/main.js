@@ -13,6 +13,9 @@
   const movelistEl = $('movelist');
   const evalFillEl = $('eval-fill');
   const evalTextEl = $('eval-text');
+  const gamePointsEl = $('game-points');
+  const scoreMultEl = $('score-mult');
+  const gameoverScoreEl = $('gameover-score');
   const capturedTopEl = $('captured-top');
   const capturedBottomEl = $('captured-bottom');
   const clockTopEl = $('clock-top');
@@ -59,6 +62,8 @@
   let selected = -1;
   let selectedMoves = [];
   let over = null;              // {over, result, reason}
+  let gamePoints = 0;           // accumulated position points for this game
+  let pointsHistory = [];       // one contribution per played ply (rolled back on undo)
   let soundOn = true;
   let thinking = false;
   let hint = null;
@@ -249,6 +254,17 @@
     evalTextEl.textContent = (p > 0 ? '+' : '') + p.toFixed(1);
   }
 
+  // ---------- game points ----------
+  function fmtPts(v) { return (v >= 0 ? '+' : '') + v.toFixed(1); }
+
+  function updateScoreUI() {
+    const m = C.Scoring.levelMultiplier(difficulty);
+    gamePointsEl.textContent = fmtPts(gamePoints);
+    gamePointsEl.classList.toggle('pos', gamePoints > 0.049);
+    gamePointsEl.classList.toggle('neg', gamePoints < -0.049);
+    scoreMultEl.textContent = 'Win \u00d7' + m + ' \u00b7 Loss \u00f7' + m + ' \u00b7 Draw \u00d71';
+  }
+
   function renderClocks() {
     const topColor = -playerColor;
     const top = clocks[String(topColor)];
@@ -382,6 +398,11 @@
     else if (done.captured) playSound('capture');
     else playSound('move');
     syncAll();
+    // every position the game reaches adds its evaluation (from the player's side)
+    const contribution = (C.AI.evaluate(game.state) * playerColor) / 100;
+    gamePoints += contribution;
+    pointsHistory.push(contribution);
+    updateScoreUI();
     const info = game.isGameOver();
     if (info.over) {
       over = info;
@@ -531,6 +552,19 @@
   }
 
   // ---------- game over ----------
+  function renderGameScore() {
+    const m = C.Scoring.levelMultiplier(difficulty);
+    const outcome = over.result === 0 ? 0 : (over.result === playerColor ? 1 : -1);
+    const final = C.Scoring.finalScore(gamePoints, outcome, difficulty);
+    const how = outcome > 0
+      ? 'accumulated ' + fmtPts(gamePoints) + ' \u00d7' + m + ' for the win'
+      : outcome < 0
+        ? 'accumulated ' + fmtPts(gamePoints) + ' \u00f7' + m + ' for the loss'
+        : 'accumulated ' + fmtPts(gamePoints) + ' \u00d71 for the draw';
+    gameoverScoreEl.innerHTML = '<span class="final">' + fmtPts(final) + ' game points</span>' +
+      '<span class="detail">' + how + '</span>';
+  }
+
   function finishGame() {
     playSound('end');
     let title, text;
@@ -548,6 +582,7 @@
     }
     gameoverTitle.textContent = title;
     gameoverText.textContent = text;
+    renderGameScore();
     syncAll();
     setTimeout(() => openModal(gameoverModal), 350);
   }
@@ -565,9 +600,13 @@
     pendingPromo = null;
     clocks = { '1': 600, '-1': 600 };
     flipped = playerColor === -1;
+    gamePoints = 0;
+    pointsHistory = [];
+    gameoverScoreEl.innerHTML = '';
     buildBoard();
     updateStrips();
     syncAll();
+    updateScoreUI();
     scheduleAI();
   }
 
@@ -1058,6 +1097,9 @@
       hint = null;
       game.undo();
       if (game.state.turn !== playerColor && game.state.history.length) game.undo();
+      // keep the running total in step with the moves still on the board
+      while (pointsHistory.length > game.state.history.length) gamePoints -= pointsHistory.pop();
+      updateScoreUI();
       syncAll();
       scheduleAI();
     });
