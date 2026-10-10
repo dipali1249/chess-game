@@ -119,6 +119,7 @@ main {
 .material-diff { color: var(--accent); font-size: 0.78rem; margin-left: 4px; }
 
 .clock {
+  position: relative;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   font-size: 1.05rem;
@@ -135,6 +136,25 @@ main {
   box-shadow: 0 0 14px rgba(124, 108, 240, 0.45);
 }
 .clock.low { color: #ffb4b4; }
+
+.clock-bonus {
+  position: absolute;
+  right: 2px;
+  top: -1.5em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #7ef0a8;
+  text-shadow: 0 0 8px rgba(126, 240, 168, 0.65);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: clockBonus 1.5s ease-out forwards;
+}
+@keyframes clockBonus {
+  0% { opacity: 0; transform: translateY(6px); }
+  15% { opacity: 1; transform: translateY(0); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-14px); }
+}
 
 /* ---------- board ---------- */
 .board-frame {
