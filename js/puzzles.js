@@ -1,10 +1,12 @@
-/* Royal Chess — built-in puzzle set (5 levels).
-   Every position here was generated and machine-verified by the chess engine:
-   each is a legal position with a forced solution of exactly the stated depth.
-   tests/puzzles.test.js re-checks all of them on every run.
+/* Royal Chess — built-in puzzle set (6 levels).
+   Levels 1-5 were generated and machine-verified by the chess engine; level 6 is
+   taken from a Martin Gardner chess collection in the connected knowledge base and
+   re-verified against the engine. tests/puzzles.test.js re-checks all of them.
 
    goal: "mate1" | "mate2" | "mate3" = mate in that many moves for the player;
-         "winrook" = win the black rook with a knight fork.
+         "winrook" = win the black rook with a knight fork;
+         "line"    = replay a stored move line (a construction/reconstruction puzzle).
+   player: which colour the solver plays (defaults to the side to move).
    line: a reference solution in SAN (the trainer accepts any correct solution). */
 (function (global) {
   'use strict';
@@ -261,6 +263,51 @@
             "Qc7",
             "Ke4",
             "Qe5#"
+          ]
+        }
+      ]
+    },
+    {
+      "level": 6,
+      "name": "Gardner's Curiosities",
+      "blurb": "Classics from Martin Gardner's chess chapter (from the Puzzle knowledge base).",
+      "bonus": true,
+      "puzzles": [
+        {
+          "id": "G6-1",
+          "theme": "Eccentric Chess",
+          "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+          "player": "w",
+          "goal": "line",
+          "note": "Find the game in which each side plays its knight four times \u2014 and both king's knights are captured on move four.",
+          "line": [
+            "Nf3",
+            "d5",
+            "Ne5",
+            "Nf6",
+            "Nc6",
+            "Nfd7",
+            "Nxb8",
+            "Nxb8"
+          ]
+        },
+        {
+          "id": "G6-2",
+          "theme": "Mutilated Score Sheet",
+          "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+          "player": "b",
+          "goal": "line",
+          "endsInMate": true,
+          "note": "White's moves survived on an 1897 score sheet; Black's were burned away. Reconstruct Black's four-move mate.",
+          "line": [
+            "f3",
+            "e5",
+            "Kf2",
+            "Qf6",
+            "Kg3",
+            "Qxf3+",
+            "Kh4",
+            "Be7#"
           ]
         }
       ]
