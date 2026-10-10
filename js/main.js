@@ -35,6 +35,21 @@
   const newgameModal = $('newgame-modal');
   const segColor = $('seg-color');
   const segDiff = $('seg-diff');
+  const puzzleModal = $('puzzle-modal');
+  const puzzleBoardEl = $('puzzle-board');
+  const puzzleLevelsEl = $('puzzle-levels');
+  const puzzleLevelLabel = $('puzzle-level-label');
+  const puzzleThemeEl = $('puzzle-theme');
+  const puzzleStatusEl = $('puzzle-status');
+  const puzzleProgressFill = $('puzzle-progress-fill');
+  const puzzleProgressText = $('puzzle-progress-text');
+  const puzzleHintsEl = $('puzzle-hints');
+  const btnPuzzleNext = $('btn-puzzle-next');
+  const btnPuzzleReset = $('btn-puzzle-reset');
+  const btnPuzzleClose = $('btn-puzzle-close');
+  const btnPuzzles = $('btn-puzzles');
+  const hintCreditsEl = $('hint-credits');
+  const puzzlePanelProgress = $('puzzle-panel-progress');
 
   // ---------- state ----------
   let game = new C.Game();
@@ -53,11 +68,29 @@
   let pendingPromo = null;
   let audioCtx = null;
 
+  // ---- puzzle trainer state ----
+  const PUZZLES = window.CHESS_PUZZLES || [];
+  let hintCredits = 0;
+  let solvedIds = {};
+  let currentLevel = 1;
+  let currentPuzzle = null;
+  let puzzleGame = null;
+  let puzzleSqEls = [];
+  let puzzleSelected = -1;
+  let puzzleMoves = [];
+  let puzzlePhase = 'player';
+  let puzzleStage = 'mate';
+  let puzzlePlies = 0;
+  let puzzleBusy = false;
+  let puzzleLast = null;
+
   init();
 
   function init() {
     buildBoard();
     bindEvents();
+    loadProgress();
+    updateHintUI();
     openModal(newgameModal);
     newGame(1, 2);
   }
@@ -96,7 +129,7 @@
     const rect = boardEl.getBoundingClientRect();
     if (rect.width > 0) boardEl.style.fontSize = (rect.width / 8) * 0.78 + 'px';
   }
-  window.addEventListener('resize', resizeBoard);
+  window.addEventListener('resize', () => { resizeBoard(); resizePuzzleBoard(); });
 
   // ---------- rendering ----------
   function renderPieces() {
@@ -567,6 +600,344 @@
     return active ? active.dataset.value : null;
   }
 
+  // ===================== puzzle trainer =====================
+  function loadProgress() {
+    try {
+      const raw = window.localStorage.getItem('royalchess.progress');
+      if (raw) {
+        const p = JSON.parse(raw);
+        hintCredits = p.hintCredits || 0;
+        solvedIds = p.solvedIds || {};
+        currentLevel = p.currentLevel || 1;
+      }
+    } catch (e) { /* storage unavailable */ }
+  }
+
+  function saveProgress() {
+    try {
+      window.localStorage.setItem('royalchess.progress', JSON.stringify({
+        hintCredits: hintCredits, solvedIds: solvedIds, currentLevel: currentLevel
+      }));
+    } catch (e) { /* ignore */ }
+  }
+
+  function levelPuzzles(n) {
+    const l = PUZZLES.find((x) => x.level === n);
+    return l ? l.puzzles : [];
+  }
+
+  function levelSolvedCount(n) {
+    return levelPuzzles(n).filter((p) => solvedIds[p.id]).length;
+  }
+
+  function levelUnlocked(n) {
+    if (n <= 1) return true;
+    const prev = levelPuzzles(n - 1);
+    return prev.length > 0 && prev.every((p) => solvedIds[p.id]);
+  }
+
+  function updateHintUI() {
+    const word = hintCredits === 1 ? ' hint' : ' hints';
+    hintCreditsEl.textContent = hintCredits + word;
+    btnHint.textContent = 'Hint (' + hintCredits + ')';
+    puzzleHintsEl.textContent = hintCredits + word;
+    const ps = levelPuzzles(currentLevel);
+    puzzlePanelProgress.textContent = 'Level ' + currentLevel + ' \u00b7 ' +
+      levelSolvedCount(currentLevel) + '/' + ps.length + ' solved';
+  }
+
+  // ---- puzzle board rendering ----
+  function buildPuzzleBoard() {
+    puzzleBoardEl.innerHTML = '';
+    puzzleSqEls = new Array(64);
+    for (let v = 0; v < 64; v++) {
+      const row = v >> 3, col = v & 7;
+      const el = document.createElement('div');
+      el.className = 'square ' + (((row + col) % 2 === 0) ? 'light' : 'dark');
+      el.dataset.sq = v;
+      if (col === 0) {
+        const r = document.createElement('span');
+        r.className = 'coord rank'; r.textContent = 8 - row;
+        el.appendChild(r);
+      }
+      if (row === 7) {
+        const f = document.createElement('span');
+        f.className = 'coord file'; f.textContent = 'abcdefgh'[col];
+        el.appendChild(f);
+      }
+      el.addEventListener('pointerdown', () => onPuzzleClick(v));
+      puzzleBoardEl.appendChild(el);
+      puzzleSqEls[v] = el;
+    }
+    resizePuzzleBoard();
+  }
+
+  function resizePuzzleBoard() {
+    if (!puzzleBoardEl) return;
+    const rect = puzzleBoardEl.getBoundingClientRect();
+    if (rect.width > 0) puzzleBoardEl.style.fontSize = (rect.width / 8) * 0.78 + 'px';
+  }
+
+  function renderPuzzlePieces() {
+    if (!puzzleGame) return;
+    for (let sq = 0; sq < 64; sq++) {
+      const el = puzzleSqEls[sq];
+      if (!el) continue;
+      const old = el.querySelector('.piece');
+      if (old) old.remove();
+      const p = puzzleGame.state.board[sq];
+      if (p) {
+        const s = document.createElement('span');
+        s.className = 'piece ' + (p > 0 ? 'white' : 'black');
+        s.textContent = GLYPH[Math.abs(p)];
+        el.appendChild(s);
+      }
+    }
+  }
+
+  function renderPuzzleHighlights() {
+    for (let sq = 0; sq < 64; sq++) {
+      const el = puzzleSqEls[sq];
+      if (!el) continue;
+      el.classList.remove('selected', 'dot', 'capturable', 'last-from', 'last-to', 'check');
+    }
+    if (!puzzleGame) return;
+    if (puzzleLast) {
+      puzzleSqEls[puzzleLast.from].classList.add('last-from');
+      puzzleSqEls[puzzleLast.to].classList.add('last-to');
+    }
+    if (puzzleSelected >= 0) {
+      puzzleSqEls[puzzleSelected].classList.add('selected');
+      for (const m of puzzleMoves) puzzleSqEls[m.to].classList.add(m.captured ? 'capturable' : 'dot');
+    }
+    if (puzzleGame.inCheck()) {
+      puzzleSqEls[puzzleGame.state.kings[puzzleGame.state.turn > 0 ? 0 : 1]].classList.add('check');
+    }
+  }
+
+  function renderPuzzle() { renderPuzzlePieces(); renderPuzzleHighlights(); }
+
+  function goalText(goal) {
+    if (goal === 'mate1') return 'mate in 1';
+    if (goal === 'mate2') return 'mate in 2';
+    if (goal === 'mate3') return 'mate in 3';
+    return 'win the rook with a fork';
+  }
+
+  function puzzleStatus(msg, cls) {
+    puzzleStatusEl.className = 'puzzle-status' + (cls ? ' ' + cls : '');
+    puzzleStatusEl.textContent = msg;
+  }
+
+  // ---- puzzle flow ----
+  function openPuzzles() {
+    if (!PUZZLES.length) return;
+    if (!puzzleBoardEl.childElementCount) buildPuzzleBoard();
+    closeModal(newgameModal);
+    closeModal(gameoverModal);
+    openModal(puzzleModal);
+    if (!levelUnlocked(currentLevel)) currentLevel = 1;
+    resizePuzzleBoard();
+    renderLevelPills();
+    const ps = levelPuzzles(currentLevel);
+    let idx = ps.findIndex((p) => !solvedIds[p.id]);
+    if (idx < 0) idx = 0;
+    loadPuzzle(currentLevel, idx);
+  }
+
+  function renderLevelPills() {
+    puzzleLevelsEl.innerHTML = '';
+    PUZZLES.forEach((l) => {
+      const b = document.createElement('button');
+      b.className = 'level-pill' + (l.level === currentLevel ? ' active' : '');
+      b.textContent = l.level;
+      b.disabled = !levelUnlocked(l.level);
+      b.title = l.name + (levelUnlocked(l.level) ? '' : ' (locked \u2014 solve the previous level)');
+      b.addEventListener('click', () => {
+        if (!levelUnlocked(l.level)) return;
+        currentLevel = l.level;
+        saveProgress();
+        const ps = levelPuzzles(l.level);
+        let idx = ps.findIndex((p) => !solvedIds[p.id]);
+        if (idx < 0) idx = 0;
+        loadPuzzle(l.level, idx);
+        renderLevelPills();
+        updateHintUI();
+      });
+      puzzleLevelsEl.appendChild(b);
+    });
+  }
+
+  function loadPuzzle(level, index) {
+    const lvl = PUZZLES.find((x) => x.level === level);
+    if (!lvl || !lvl.puzzles.length) return;
+    const ps = lvl.puzzles;
+    const p = ps[((index % ps.length) + ps.length) % ps.length];
+    currentPuzzle = p;
+    currentLevel = level;
+    puzzleGame = new C.Game(p.fen);
+    puzzleSelected = -1;
+    puzzleMoves = [];
+    puzzleLast = null;
+    puzzleBusy = false;
+    puzzlePhase = 'player';
+    puzzleStage = p.goal === 'winrook' ? 'fork' : 'mate';
+    puzzlePlies = p.goal === 'mate1' ? 1 : p.goal === 'mate2' ? 3 : p.goal === 'mate3' ? 5 : 0;
+    puzzleLevelLabel.textContent = 'Level ' + level + ' \u00b7 ' + lvl.name;
+    puzzleThemeEl.textContent = p.theme;
+    puzzleStatus('White to move \u2014 ' + goalText(p.goal), null);
+    puzzleProgressText.textContent = 'Puzzle ' + (ps.indexOf(p) + 1) + ' of ' + ps.length;
+    puzzleProgressFill.style.width = (levelSolvedCount(level) / ps.length * 100) + '%';
+    btnPuzzleNext.disabled = !solvedIds[p.id];
+    resizePuzzleBoard();
+    renderPuzzle();
+    updateHintUI();
+  }
+
+  function onPuzzleClick(sq) {
+    if (!puzzleGame || puzzleBusy || puzzlePhase !== 'player') return;
+    if (puzzleGame.state.turn !== 1) return;            // the player is always white in puzzles
+    if (puzzleSelected >= 0 && puzzleMoves.some((m) => m.to === sq)) {
+      attemptPuzzleMove(puzzleSelected, sq);
+      return;
+    }
+    const p = puzzleGame.state.board[sq];
+    if (p && p > 0) {
+      puzzleSelected = sq;
+      puzzleMoves = puzzleGame.moves(sq);
+    } else {
+      puzzleSelected = -1;
+      puzzleMoves = [];
+    }
+    renderPuzzleHighlights();
+  }
+
+  function knightAttacksSq(sq) {
+    const r = sq >> 3, c = sq & 7, out = [];
+    const D = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
+    for (const [dr, dc] of D) {
+      const rr = r + dr, cc = c + dc;
+      if (rr >= 0 && rr < 8 && cc >= 0 && cc < 8) out.push(rr * 8 + cc);
+    }
+    return out;
+  }
+
+  function blackRookSq() {
+    for (let i = 0; i < 64; i++) if (puzzleGame.state.board[i] === -4) return i;
+    return -1;
+  }
+
+  function attemptPuzzleMove(from, to) {
+    const cands = puzzleGame.moves().filter((m) => m.from === from && m.to === to);
+    if (!cands.length) return;
+    const promo = cands.length > 1 ? 5 : (cands[0].promotion || 0);   // auto-queen in puzzles
+    const goal = currentPuzzle.goal;
+    const rookBefore = goal === 'winrook' ? blackRookSq() : -1;
+
+    puzzleGame.move(from, to, promo);
+    puzzleLast = { from: from, to: to };
+    puzzleSelected = -1;
+    puzzleMoves = [];
+    renderPuzzle();
+
+    if (goal === 'winrook') {
+      if (puzzleStage === 'fork') {
+        const m = puzzleGame.state.history[puzzleGame.state.history.length - 1].move;
+        const forked = Math.abs(m.piece) === 2 && puzzleGame.inCheck() &&
+          knightAttacksSq(to).includes(rookBefore);
+        if (!forked) return puzzleWrong();
+        puzzleStage = 'capture';
+        puzzleBusy = true;
+        puzzleStatus('Fork! \u2014 now win the rook', 'good');
+        setTimeout(() => {
+          playOpponentReply();
+          puzzleBusy = false;
+          puzzleStatus('Now take the rook', 'good');
+          renderPuzzle();
+        }, 420);
+        return;
+      }
+      if (to !== rookBefore) return puzzleWrong();      // must actually capture the rook
+      solvePuzzle();
+      return;
+    }
+
+    // mate puzzles
+    if (puzzleGame.moves().length === 0) {
+      if (puzzleGame.inCheck()) { solvePuzzle(); return; }
+      return puzzleWrong();                             // stalemate
+    }
+    if (!C.AI.mateWithin(puzzleGame.state, puzzlePlies - 1)) return puzzleWrong();
+    puzzleBusy = true;
+    puzzleStatus('Correct! \u2014 the engine replies\u2026', 'good');
+    setTimeout(() => {
+      playOpponentReply();
+      puzzlePlies -= 2;
+      puzzleBusy = false;
+      puzzleStatus('Your move \u2014 keep going', 'good');
+      renderPuzzle();
+    }, 420);
+  }
+
+  function puzzleWrong() {
+    puzzleGame.undo();
+    puzzleLast = null;
+    puzzleSelected = -1;
+    puzzleMoves = [];
+    renderPuzzle();
+    puzzleStatus('Not the move \u2014 try again', 'wrong');
+    puzzleBoardEl.classList.add('puzzle-shake');
+    setTimeout(() => puzzleBoardEl.classList.remove('puzzle-shake'), 320);
+  }
+
+  function playOpponentReply() {
+    const replies = puzzleGame.moves();
+    if (!replies.length) return;
+    let best = replies[0], bestScore = -Infinity;
+    for (const r of replies) {
+      puzzleGame.move(r.from, r.to, r.promotion || 0);
+      const score = currentPuzzle.goal === 'winrook'
+        ? -C.AI.evaluate(puzzleGame.state)               // black's point of view
+        : C.AI.mateIn(puzzleGame.state, 4);              // longest defence
+      puzzleGame.undo();
+      if (score > bestScore) { bestScore = score; best = r; }
+    }
+    puzzleGame.move(best.from, best.to, best.promotion || 0);
+    puzzleLast = { from: best.from, to: best.to };
+    playSound('move');
+    renderPuzzle();
+  }
+
+  function solvePuzzle() {
+    puzzlePhase = 'solved';
+    const already = !!solvedIds[currentPuzzle.id];
+    let msg = already ? 'Solved again \u2014 nice' : 'Solved! +1 hint earned (' + (hintCredits + 1) + ' total)';
+    if (!already) {
+      solvedIds[currentPuzzle.id] = true;
+      hintCredits++;
+      saveProgress();
+    }
+    playSound('end');
+    btnPuzzleNext.disabled = false;
+    const ps = levelPuzzles(currentLevel);
+    if (ps.every((p) => solvedIds[p.id]) && currentLevel < 5) {
+      msg = 'Level ' + currentLevel + ' complete! Level ' + (currentLevel + 1) + ' unlocked.';
+    }
+    puzzleStatus(msg, 'solved');
+    puzzleProgressFill.style.width = (levelSolvedCount(currentLevel) / ps.length * 100) + '%';
+    renderPuzzle();
+    renderLevelPills();
+    updateHintUI();
+  }
+
+  function nextPuzzle() {
+    const ps = levelPuzzles(currentLevel);
+    let idx = ps.findIndex((p) => !solvedIds[p.id]);
+    if (idx < 0) idx = (ps.indexOf(currentPuzzle) + 1) % ps.length;
+    loadPuzzle(currentLevel, idx);
+    renderLevelPills();
+  }
+
   // ---------- events ----------
   function bindEvents() {
     boardEl.addEventListener('pointerdown', onPointerDown);
@@ -616,8 +987,16 @@
 
     btnHint.addEventListener('click', () => {
       if (over || thinking || game.state.turn !== playerColor) return;
+      if (hintCredits <= 0) {
+        statusEl.textContent = 'Solve a puzzle to earn a hint';
+        openPuzzles();
+        return;
+      }
       const m = C.AI.search(game.state, 2);
       if (!m) return;
+      hintCredits--;
+      saveProgress();
+      updateHintUI();
       hint = m;
       renderHighlights();
       setTimeout(() => { hint = null; renderHighlights(); }, 2600);
@@ -637,6 +1016,13 @@
       pendingPromo = null;
       clearSelection();
     });
+
+    btnPuzzles.addEventListener('click', openPuzzles);
+    btnPuzzleClose.addEventListener('click', () => closeModal(puzzleModal));
+    btnPuzzleReset.addEventListener('click', () => {
+      if (currentPuzzle) loadPuzzle(currentLevel, levelPuzzles(currentLevel).indexOf(currentPuzzle));
+    });
+    btnPuzzleNext.addEventListener('click', nextPuzzle);
 
     $('btn-rematch').addEventListener('click', () => {
       closeModal(gameoverModal);
