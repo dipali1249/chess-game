@@ -57,6 +57,11 @@
         <span id="eval-text" class="eval-text">0.0</span>
       </div>
 
+      <div class="score-panel">
+        <div class="score-row"><span>Game points</span><span id="game-points" class="score-value">+0.0</span></div>
+        <div class="score-row score-mult" id="score-mult">Win &times;5 &middot; Loss &divide;5 &middot; Draw &times;1</div>
+      </div>
+
       <div class="puzzle-panel">
         <div class="puzzle-panel-row"><span>Puzzle training</span><span id="hint-credits" class="hint-credits">0 hints</span></div>
         <div class="puzzle-panel-row" id="puzzle-panel-progress">0 of 7 solved</div>
@@ -99,6 +104,7 @@
   <div class="modal-card">
     <h3 id="gameover-title">Game over</h3>
     <p id="gameover-text"></p>
+    <div class="gameover-score" id="gameover-score"></div>
     <div class="modal-actions">
       <button id="btn-rematch" class="btn primary">Rematch</button>
       <button id="btn-close-gameover" class="btn">Review board</button>
