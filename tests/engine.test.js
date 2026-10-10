@@ -124,4 +124,15 @@ const res11 = g11.isGameOver();
 assert.strictEqual(res11.reason, 'checkmate', 'AI delivers back-rank mate');
 console.log('AI finds mate-in-1 OK');
 
+// ---- mate search (used by the puzzle trainer) ----
+assert.strictEqual(Chess.AI.mateIn(new Chess.Game('6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1').state, 3), 1);
+assert.strictEqual(Chess.AI.mateIn(new Chess.Game('1k6/p1p5/8/3K1R2/3Q4/8/8/8 w - - 0 1').state, 3), 2);
+assert.strictEqual(Chess.AI.mateIn(new Chess.Game().state, 3), 0);       // no mate from the start
+assert.strictEqual(Chess.AI.mateIn(new Chess.Game('8/8/8/8/8/8/8/K6k w - - 0 1').state, 2), 0);
+// side to move already checkmated -> mated within 1 ply
+assert.ok(Chess.AI.mateWithin(new Chess.Game('R5k1/5ppp/8/8/8/8/5PPP/6K1 b - - 0 1').state, 1));
+// side to move is not losing in the start position
+assert.ok(!Chess.AI.mateWithin(new Chess.Game().state, 3));
+console.log('mate search OK (mateIn / mateWithin)');
+
 console.log('\nAll engine tests passed.');
