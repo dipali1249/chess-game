@@ -22,15 +22,14 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Negamax search with alpha-beta pruning and MVV-LVA move ordering
 - Quiescence search to avoid shallow capture blunders
 - Piece-square-table evaluation with tapered king tables and bishop-pair bonus
-- Three difficulty levels (Easy / Medium / Hard), set by the **Difficulty control on the game panel** — a live game setting you can change at any time, even mid-game, remembered between sessions
+- **Five difficulty levels** — Beginner, Casual, Club, Strong, Expert — chosen in the New Game dialog before the game starts
 
 ### Puzzle training (earn your hints)
-- 6 levels, 22 puzzles, every one machine-verified by the engine
-- Level 1 mate in 1 &middot; Level 2 mate in 2 &middot; Level 3 win a rook with a knight fork &middot; Level 4 mate in 2 (harder) &middot; Level 5 mate in 3
-- Level 6 "Gardner's Curiosities" — two classics taken from a Martin Gardner chess collection, always unlocked
-- Levels 1-5 unlock as you solve them; progress is saved in your browser
+- **Every puzzle comes from the connected knowledge base** (Martin Gardner's chess chapter) — nothing is generated locally
+- No levels: one flat set, worked through in order
+- Board puzzles ask you to play the book's line; the rest are the book's own chess questions
+- **Each puzzle can be solved once.** Once solved it is locked and skipped — it can never be solved again in that session
 - **Hints are earned, not given:** each solved puzzle grants one hint credit, and the Hint button costs one credit. With none left, it opens the trainer.
-- Any correct solution is accepted (validated by the engine's mate search), not just one hard-coded line
 
 ### Interface
 - Drag-and-drop **and** tap/click-to-move (works on touch)
@@ -41,7 +40,8 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Undo (takes back both your move and the engine's reply)
 - Promotion picker (with cancel), game-over and new-game dialogs
 - Play as White, Black, or random side; board flip
-- Engine strength lives in the game panel (not buried in the new-game dialog), so it applies to the game — puzzles keep their own separate level progression
+- Engine strength is chosen before the game, in the New Game dialog
+- A large board (up to 860px) that scales with the window
 - Four board themes (Classic, Emerald, Ocean, Midnight)
 - Synthesized sound effects (move, capture, castle, check, game end) via Web Audio
 - Fully responsive layout for phones and desktops
@@ -53,7 +53,7 @@ chess-game/
 ├── index.html              # page layout and modals
 ├── css/style.css           # all styling and themes
 ├── js/engine.js            # rules engine + AI + mate search (browser and Node)
-├── js/puzzles.js           # the built-in 6-level puzzle set
+├── js/puzzles.js           # the knowledge-base puzzle set (flat, no levels)
 ├── js/main.js              # UI, drag & drop, clocks, sounds, puzzle trainer
 ├── tests/engine.test.js    # perft + rules + AI tests
 └── tests/puzzles.test.js   # re-verifies every shipped puzzle
@@ -70,8 +70,8 @@ node tests/puzzles.test.js
 
 - The board is a flat `Int8Array(64)` (index 0 = a8), pieces signed by color — fast enough for a depth-3 alpha-beta search with quiescence in plain JavaScript.
 - The engine module is UMD-style: the same file powers the browser game and the Node test suite.
-- Puzzles are generated and verified offline by the engine itself (forced mates found with a mate-window search), then re-checked by `tests/puzzles.test.js` on every run.
-- Level 6 is sourced from a Martin Gardner chess collection in the connected knowledge base; each position was reconstructed from the book and re-verified against the engine. One Gardner problem (Fabel's "Don't Mate in One") could not be reconstructed faithfully from the source figure and was left out rather than guessed at.
+- Every puzzle ships from the connected knowledge base (Martin Gardner's chess chapter) and is re-checked by `tests/puzzles.test.js`. The chapter's board positions are played on the board; its logic problems are posed as multiple-choice questions with the book's own answers.
+- One Gardner problem (Fabel's "Don't Mate in One") could not be reconstructed faithfully from the source figure and was left out rather than guessed at.
 
 ## License
 
