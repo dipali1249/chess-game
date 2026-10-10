@@ -36,7 +36,7 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Legal-move dots, capture rings, last-move and check highlights
 - Live evaluation bar (from your side) and material captured display
 - Move list in SAN with auto-scroll
-- 10-minute clocks per side with time-forfeit detection
+- 10-minute clocks per side with time-forfeit detection, plus level-based time bonuses (see below)
 - Undo (takes back both your move and the engine's reply)
 - Promotion picker (with cancel), game-over and new-game dialogs
 - Play as White, Black, or random side; board flip
@@ -46,6 +46,25 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Four board themes (Classic, Emerald, Ocean, Midnight)
 - Synthesized sound effects (move, capture, castle, check, game end) via Web Audio
 - Fully responsive layout for phones and desktops
+
+### Time bonuses
+
+Both sides start with 10 minutes. As the game goes on the clock is topped up
+according to the chosen difficulty. Here one "move" is a single ply (one
+player's turn), and each bonus goes to the side that just moved.
+
+| Level | Bonus | Paid |
+|---|---|---|
+| 1 Beginner | +2 min | every move from move 11 on |
+| 2 Casual | +10 min | every 5 moves after move 10 (moves 15, 20, …) |
+| 3 Club | +30 min | every 10 moves after move 10 (moves 20, 30, …) |
+| 4 Strong | +45 min | every 45 moves from the start |
+| 5 Expert | +50 min | every 50 moves from the start |
+
+You earn these bonuses at every level. The engine earns them only in levels 1
+and 5 — in levels 2, 3 and 4 the computer gets no bonus, so a scheduled payout
+that falls on the computer's turn is skipped. A green "+m:ss" flash on the
+clock shows each top-up.
 
 ## Project structure
 
