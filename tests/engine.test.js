@@ -162,4 +162,37 @@ assert.ok(near(Chess.Scoring.finalScore(-9.5, 1, 1), -47.5), 'a negative total s
 assert.ok(near(Chess.Scoring.finalScore(-9.5, -1, 5), -9.5 / 30), 'a negative total is divided on a loss');
 console.log('game-point scoring OK (win x, loss /, draw x1)');
 
+// ---- time bonuses (Scoring) ----
+// Level 1: +2 min on every ply from ply 11 on
+assert.strictEqual(Chess.Scoring.timeBonus(1, 10), 0);
+assert.strictEqual(Chess.Scoring.timeBonus(1, 11), 120);
+assert.strictEqual(Chess.Scoring.timeBonus(1, 12), 120);
+assert.strictEqual(Chess.Scoring.timeBonus(1, 30), 120);
+// Level 2: +10 min every 5th ply after ply 10 (plies 15, 20, 25 ...)
+assert.strictEqual(Chess.Scoring.timeBonus(2, 10), 0);
+assert.strictEqual(Chess.Scoring.timeBonus(2, 14), 0);
+assert.strictEqual(Chess.Scoring.timeBonus(2, 15), 600);
+assert.strictEqual(Chess.Scoring.timeBonus(2, 20), 600);
+assert.strictEqual(Chess.Scoring.timeBonus(2, 21), 0);
+// Level 3: +30 min every 10th ply after ply 10 (plies 20, 30 ...)
+assert.strictEqual(Chess.Scoring.timeBonus(3, 10), 0);
+assert.strictEqual(Chess.Scoring.timeBonus(3, 19), 0);
+assert.strictEqual(Chess.Scoring.timeBonus(3, 20), 1800);
+assert.strictEqual(Chess.Scoring.timeBonus(3, 30), 1800);
+// Level 4: +45 min every 45th ply from the start
+assert.strictEqual(Chess.Scoring.timeBonus(4, 44), 0);
+assert.strictEqual(Chess.Scoring.timeBonus(4, 45), 2700);
+assert.strictEqual(Chess.Scoring.timeBonus(4, 90), 2700);
+// Level 5: +50 min every 50th ply from the start
+assert.strictEqual(Chess.Scoring.timeBonus(5, 49), 0);
+assert.strictEqual(Chess.Scoring.timeBonus(5, 50), 3000);
+assert.strictEqual(Chess.Scoring.timeBonus(5, 100), 3000);
+// only levels 1 and 5 give the computer a bonus
+assert.strictEqual(Chess.Scoring.computerGetsBonus(1), true);
+assert.strictEqual(Chess.Scoring.computerGetsBonus(2), false);
+assert.strictEqual(Chess.Scoring.computerGetsBonus(3), false);
+assert.strictEqual(Chess.Scoring.computerGetsBonus(4), false);
+assert.strictEqual(Chess.Scoring.computerGetsBonus(5), true);
+console.log('time bonuses OK (per-level schedule + computer eligibility)');
+
 console.log('\nAll engine tests passed.');
