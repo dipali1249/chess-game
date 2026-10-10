@@ -1,320 +1,93 @@
-/* Royal Chess — built-in puzzle set (6 levels).
-   Levels 1-5 were generated and machine-verified by the chess engine; level 6 is
-   taken from a Martin Gardner chess collection in the connected knowledge base and
-   re-verified against the engine. tests/puzzles.test.js re-checks all of them.
+/* Royal Chess — built-in puzzle set.
+   Every puzzle here comes from the connected knowledge base: Martin Gardner's
+   chess chapter (the "Puzzle" collection). Nothing is generated locally.
+   tests/puzzles.test.js re-checks the board puzzles on every run.
 
-   goal: "mate1" | "mate2" | "mate3" = mate in that many moves for the player;
-         "winrook" = win the black rook with a knight fork;
-         "line"    = replay a stored move line (a construction/reconstruction puzzle).
-   player: which colour the solver plays (defaults to the side to move).
-   line: a reference solution in SAN (the trainer accepts any correct solution). */
+   kind:     "line"     — play the solution on the board.
+             "question" — a multiple-choice question about the book's problem.
+   player:   for "line" puzzles, the colour the solver plays.
+   line:     the reference solution in SAN (the trainer accepts the book's line).
+   choices / answer: the options and the index of the correct one. */
 (function (global) {
   'use strict';
 
-  var LEVELS = [
+  var PUZZLES = [
     {
-      "level": 1,
-      "name": "Mate in 1",
-      "blurb": "Find the immediate checkmate.",
-      "puzzles": [
-        {
-          "id": "L1-1",
-          "theme": "Back-rank mate",
-          "fen": "6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1",
-          "goal": "mate1",
-          "line": [
-            "Ra8#"
-          ]
-        },
-        {
-          "id": "L1-2",
-          "theme": "Back-rank with the queen",
-          "fen": "6k1/5ppp/8/8/8/8/5PPP/3Q2K1 w - - 0 1",
-          "goal": "mate1",
-          "line": [
-            "Qd8#"
-          ]
-        },
-        {
-          "id": "L1-3",
-          "theme": "Corner back-rank",
-          "fen": "7k/6pp/8/8/8/8/8/R6K w - - 0 1",
-          "goal": "mate1",
-          "line": [
-            "Ra8#"
-          ]
-        },
-        {
-          "id": "L1-4",
-          "theme": "Smothered mate",
-          "fen": "6rk/6pp/8/6N1/8/8/8/1K6 w - - 0 1",
-          "goal": "mate1",
-          "line": [
-            "Nf7#"
-          ]
-        }
-      ]
+      "id": "G1",
+      "theme": "Eccentric Chess",
+      "source": "Martin Gardner, chess chapter \u2014 Problem 12.8",
+      "kind": "line",
+      "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      "player": "w",
+      "note": "Construct the game in which each side plays its knight four times \u2014 and both king's knights are captured on move four.",
+      "line": ["Nf3", "d5", "Ne5", "Nf6", "Nc6", "Nfd7", "Nxb8", "Nxb8"]
     },
     {
-      "level": 2,
-      "name": "Mate in 2",
-      "blurb": "Force mate in two moves.",
-      "puzzles": [
-        {
-          "id": "L2-1",
-          "theme": "Forced mate in 2",
-          "fen": "1k6/p1p5/8/3K1R2/3Q4/8/8/8 w - - 0 1",
-          "goal": "mate2",
-          "line": [
-            "Kc6",
-            "Kc8",
-            "Rf8#"
-          ]
-        },
-        {
-          "id": "L2-2",
-          "theme": "Forced mate in 2",
-          "fen": "8/2K5/8/p3R3/k7/8/8/5R2 w - - 0 1",
-          "goal": "mate2",
-          "line": [
-            "Rb1",
-            "Ka3",
-            "Rxa5#"
-          ]
-        },
-        {
-          "id": "L2-3",
-          "theme": "Forced mate in 2",
-          "fen": "1R6/4K2p/4Qpk1/8/8/8/8/8 w - - 0 1",
-          "goal": "mate2",
-          "line": [
-            "Rg8+",
-            "Kh6",
-            "Qh3#"
-          ]
-        },
-        {
-          "id": "L2-4",
-          "theme": "Forced mate in 2",
-          "fen": "7k/3Q2p1/4K3/8/p7/8/8/8 w - - 0 1",
-          "goal": "mate2",
-          "line": [
-            "Kf7",
-            "Kh7",
-            "Qh3#"
-          ]
-        }
-      ]
+      "id": "G2",
+      "theme": "Mutilated Score Sheet",
+      "source": "Martin Gardner, chess chapter \u2014 Problem 12.13",
+      "kind": "line",
+      "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      "player": "b",
+      "endsInMate": true,
+      "note": "White's moves survived on an 1897 score sheet; Black's were burned away. Reconstruct Black's four-move mate.",
+      "line": ["f3", "e5", "Kf2", "Qf6", "Kg3", "Qxf3+", "Kh4", "Be7#"]
     },
     {
-      "level": 3,
-      "name": "Win material",
-      "blurb": "Win a rook with a knight fork.",
-      "puzzles": [
-        {
-          "id": "L3-1",
-          "theme": "Knight fork",
-          "fen": "5k2/8/5rp1/6N1/8/8/8/1K6 w - - 0 1",
-          "goal": "winrook",
-          "line": [
-            "Nh7+",
-            "Ke7",
-            "Nxf6"
-          ]
-        },
-        {
-          "id": "L3-2",
-          "theme": "Knight fork",
-          "fen": "7K/1k6/8/p7/2N5/1r6/8/8 w - - 0 1",
-          "goal": "winrook",
-          "line": [
-            "Nxa5+",
-            "Kc7",
-            "Nxb3"
-          ]
-        },
-        {
-          "id": "L3-3",
-          "theme": "Knight fork",
-          "fen": "7K/8/1p6/1r6/8/8/2k5/1N6 w - - 0 1",
-          "goal": "winrook",
-          "line": [
-            "Na3+",
-            "Kd3",
-            "Nxb5"
-          ]
-        },
-        {
-          "id": "L3-4",
-          "theme": "Knight fork",
-          "fen": "8/3N4/k7/8/1p2r3/8/8/1K6 w - - 0 1",
-          "goal": "winrook",
-          "line": [
-            "Nc5+",
-            "Kb6",
-            "Nxe4"
-          ]
-        }
-      ]
+      "id": "G3",
+      "theme": "Avoiding Checks",
+      "source": "Martin Gardner, chess chapter \u2014 Problem 12.1",
+      "kind": "question",
+      "fen": "7n/8/8/8/8/8/8/K7 b - - 0 1",
+      "question": "A lone knight (to move) chases your king, which sits in the corner. For how long can the king avoid being checked?",
+      "choices": ["Forever", "About 6 moves", "About 12 moves", "It is checked at once"],
+      "answer": 0,
+      "explain": "Forever \u2014 head for the centre and always keep your king on the opposite colour to the knight. A knight changes colour on every move, so it can never check you. Only a corner can trap you."
     },
     {
-      "level": 4,
-      "name": "Mate in 2 (harder)",
-      "blurb": "Tighter positions — find the forced mate.",
-      "puzzles": [
-        {
-          "id": "L4-1",
-          "theme": "Forced mate in 2",
-          "fen": "8/8/1r6/8/1R6/3K4/1p2R3/k7 w - - 0 1",
-          "goal": "mate2",
-          "line": [
-            "Ra4+",
-            "Kb1",
-            "Re1#"
-          ]
-        },
-        {
-          "id": "L4-2",
-          "theme": "Forced mate in 2",
-          "fen": "8/8/4p3/8/5QK1/5p2/7p/7k w - - 0 1",
-          "goal": "mate2",
-          "line": [
-            "Kxf3",
-            "e5",
-            "Qc1#"
-          ]
-        },
-        {
-          "id": "L4-3",
-          "theme": "Forced mate in 2",
-          "fen": "8/8/8/5Qp1/6K1/8/6pp/7k w - - 0 1",
-          "goal": "mate2",
-          "line": [
-            "Qe4",
-            "Kg1",
-            "Qe1#"
-          ]
-        },
-        {
-          "id": "L4-4",
-          "theme": "Forced mate in 2",
-          "fen": "5R2/8/7r/8/5R2/k1K5/p7/8 w - - 0 1",
-          "goal": "mate2",
-          "line": [
-            "Ra8+",
-            "Ra6",
-            "Rxa6#"
-          ]
-        }
-      ]
+      "id": "G4",
+      "theme": "Twenty-Five Knights",
+      "source": "Martin Gardner, chess chapter \u2014 Problem 12.4",
+      "kind": "question",
+      "question": "Every square of a 5\u00d75 board holds a knight. Can all 25 knights jump at once so that every square is still occupied?",
+      "choices": ["Yes \u2014 it always works", "No \u2014 it is impossible", "Only if the corner knights stay put"],
+      "answer": 1,
+      "explain": "Impossible. A knight always lands on the opposite colour, but a 5\u00d75 board has 13 squares of one colour and only 12 of the other \u2014 so 13 knights cannot land on 12 squares."
     },
     {
-      "level": 5,
-      "name": "Mate in 3",
-      "blurb": "The deepest combination.",
-      "puzzles": [
-        {
-          "id": "L5-1",
-          "theme": "Forced mate in 3",
-          "fen": "8/4pkp1/7R/1Q3K2/8/8/8/8 w - - 0 1",
-          "goal": "mate3",
-          "line": [
-            "Qc4+",
-            "e6+",
-            "Qxe6+",
-            "Kf8",
-            "Rh8#"
-          ]
-        },
-        {
-          "id": "L5-2",
-          "theme": "Forced mate in 3",
-          "fen": "8/8/8/2RQ4/4K3/5p2/4k3/8 w - - 0 1",
-          "goal": "mate3",
-          "line": [
-            "Rc2+",
-            "Ke1",
-            "Qb7",
-            "f2",
-            "Qb1#"
-          ]
-        },
-        {
-          "id": "L5-3",
-          "theme": "Forced mate in 3",
-          "fen": "2k5/2pp4/5R2/3K4/4Q3/8/8/8 w - - 0 1",
-          "goal": "mate3",
-          "line": [
-            "Qb1",
-            "Kd8",
-            "Qb8+",
-            "Ke7",
-            "Qf8#"
-          ]
-        },
-        {
-          "id": "L5-4",
-          "theme": "Forced mate in 3",
-          "fen": "2Q5/6K1/8/3p4/4k3/7R/8/8 w - - 0 1",
-          "goal": "mate3",
-          "line": [
-            "Kf6",
-            "Kd4",
-            "Qc7",
-            "Ke4",
-            "Qe5#"
-          ]
-        }
-      ]
+      "id": "G5",
+      "theme": "Maximising Moves",
+      "source": "Martin Gardner, chess chapter \u2014 Problem 12.7",
+      "kind": "question",
+      "question": "Placed freely on an empty board, what is the greatest number of moves the eight pieces of one colour (no pawns) can have between them?",
+      "choices": ["51", "74", "100", "128"],
+      "answer": 2,
+      "explain": "100. The Bezzel position gives exactly 100 moves, and E. Landau proved in 1899 that 100 is the maximum."
     },
     {
-      "level": 6,
-      "name": "Gardner's Curiosities",
-      "blurb": "Classics from Martin Gardner's chess chapter (from the Puzzle knowledge base).",
-      "bonus": true,
-      "puzzles": [
-        {
-          "id": "G6-1",
-          "theme": "Eccentric Chess",
-          "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-          "player": "w",
-          "goal": "line",
-          "note": "Find the game in which each side plays its knight four times \u2014 and both king's knights are captured on move four.",
-          "line": [
-            "Nf3",
-            "d5",
-            "Ne5",
-            "Nf6",
-            "Nc6",
-            "Nfd7",
-            "Nxb8",
-            "Nxb8"
-          ]
-        },
-        {
-          "id": "G6-2",
-          "theme": "Mutilated Score Sheet",
-          "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-          "player": "b",
-          "goal": "line",
-          "endsInMate": true,
-          "note": "White's moves survived on an 1897 score sheet; Black's were burned away. Reconstruct Black's four-move mate.",
-          "line": [
-            "f3",
-            "e5",
-            "Kf2",
-            "Qf6",
-            "Kg3",
-            "Qxf3+",
-            "Kh4",
-            "Be7#"
-          ]
-        }
-      ]
+      "id": "G6",
+      "theme": "Starting a Chess Game",
+      "source": "Martin Gardner, chess chapter \u2014 Problem 12.9",
+      "kind": "question",
+      "question": "All 32 pieces are on the board, one per square; moving a piece to any empty square counts as one move. What is the largest number of moves that can ever be needed to reach the proper starting position?",
+      "choices": ["33", "36", "40", "48"],
+      "answer": 1,
+      "explain": "36 moves \u2014 or 37 if Black must finish at the bottom with the queens on their own colours."
+    },
+    {
+      "id": "G7",
+      "theme": "Indian Chess Mystery",
+      "source": "Martin Gardner, chess chapter \u2014 Problem 12.10",
+      "kind": "question",
+      "fen": "r1b1k2r/pppppppp/8/2N3N1/5n2/2n5/PPPPPPPP/1RBK1B1R w - - 0 1",
+      "question": "The light pieces are in check. From the position alone, which side made the first move?",
+      "choices": ["The light pieces", "The dark pieces"],
+      "answer": 1,
+      "explain": "The dark pieces. Smullyan's parity argument: the total number of moves made is odd, so the side that moved last (the light pieces, now in check) did not move first."
     }
   ];
 
-  global.CHESS_PUZZLES = LEVELS;
-  if (typeof module !== 'undefined' && module.exports) module.exports = LEVELS;
+  global.CHESS_PUZZLES = PUZZLES;
+  if (typeof module !== 'undefined' && module.exports) module.exports = PUZZLES;
 
 })(typeof window !== 'undefined' ? window : globalThis);
