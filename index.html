@@ -77,6 +77,16 @@
           </select>
         </label>
       </div>
+
+      <div class="settings-row">
+        <label>Difficulty
+          <select id="difficulty-select">
+            <option value="1">Easy</option>
+            <option value="2" selected>Medium</option>
+            <option value="3">Hard</option>
+          </select>
+        </label>
+      </div>
     </aside>
   </main>
 
@@ -143,14 +153,7 @@
         <button data-value="r">Random</button>
       </div>
     </div>
-    <div class="option-group">
-      <div class="option-label">Difficulty</div>
-      <div class="segmented" id="seg-diff">
-        <button data-value="1">Easy</button>
-        <button data-value="2" class="active">Medium</button>
-        <button data-value="3">Hard</button>
-      </div>
-    </div>
+    <p class="modal-note">Engine strength is set by the Difficulty control on the side panel &mdash; you can change it at any time, even mid-game.</p>
     <div class="modal-actions">
       <button id="btn-start" class="btn primary">Start game</button>
       <button id="btn-cancel-new" class="btn">Cancel</button>
