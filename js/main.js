@@ -34,10 +34,10 @@
   const gameoverText = $('gameover-text');
   const newgameModal = $('newgame-modal');
   const segColor = $('seg-color');
-  const difficultySelect = $('difficulty-select');
+  const segDiff = $('seg-diff');
   const puzzleModal = $('puzzle-modal');
   const puzzleBoardEl = $('puzzle-board');
-  const puzzleLevelsEl = $('puzzle-levels');
+  const puzzleAnswersEl = $('puzzle-answers');
   const puzzleLevelLabel = $('puzzle-level-label');
   const puzzleThemeEl = $('puzzle-theme');
   const puzzleStatusEl = $('puzzle-status');
@@ -54,7 +54,7 @@
   // ---------- state ----------
   let game = new C.Game();
   let playerColor = 1;          // 1 white, -1 black
-  let difficulty = 2;           // 1 easy, 2 medium, 3 hard
+  let difficulty = 3;           // 1 Beginner .. 5 Expert
   let flipped = false;          // visual flip
   let selected = -1;
   let selectedMoves = [];
@@ -72,7 +72,7 @@
   const PUZZLES = window.CHESS_PUZZLES || [];
   let hintCredits = 0;
   let solvedIds = {};
-  let currentLevel = 1;
+  let currentIndex = 0;
   let currentPuzzle = null;
   let puzzleGame = null;
   let puzzleSqEls = [];
@@ -93,7 +93,7 @@
     buildBoard();
     bindEvents();
     loadProgress();
-    difficultySelect.value = String(difficulty);
+    markDifficultyButtons();
     updateHintUI();
     openModal(newgameModal);
     newGame(1, difficulty);
@@ -612,8 +612,8 @@
         const p = JSON.parse(raw);
         hintCredits = p.hintCredits || 0;
         solvedIds = p.solvedIds || {};
-        currentLevel = p.currentLevel || 1;
-        difficulty = p.difficulty || 2;
+        currentIndex = p.currentIndex || 0;
+        difficulty = p.difficulty || 3;
       }
     } catch (e) { /* storage unavailable */ }
   }
@@ -621,27 +621,29 @@
   function saveProgress() {
     try {
       window.localStorage.setItem('royalchess.progress', JSON.stringify({
-        hintCredits: hintCredits, solvedIds: solvedIds, currentLevel: currentLevel,
+        hintCredits: hintCredits, solvedIds: solvedIds, currentIndex: currentIndex,
         difficulty: difficulty
       }));
     } catch (e) { /* ignore */ }
   }
 
-  function levelPuzzles(n) {
-    const l = PUZZLES.find((x) => x.level === n);
-    return l ? l.puzzles : [];
+  function solvedCount() {
+    return PUZZLES.filter((p) => solvedIds[p.id]).length;
   }
 
-  function levelSolvedCount(n) {
-    return levelPuzzles(n).filter((p) => solvedIds[p.id]).length;
+  // index of the next unsolved puzzle, searching forward from `start`
+  function firstUnsolvedFrom(start) {
+    for (let i = 0; i < PUZZLES.length; i++) {
+      const idx = ((start + i) % PUZZLES.length + PUZZLES.length) % PUZZLES.length;
+      if (!solvedIds[PUZZLES[idx].id]) return idx;
+    }
+    return -1;
   }
 
-  function levelUnlocked(n) {
-    const lvl = PUZZLES.find((x) => x.level === n);
-    if (lvl && lvl.bonus) return true;      // bonus levels are always open
-    if (n <= 1) return true;
-    const prev = levelPuzzles(n - 1);
-    return prev.length > 0 && prev.every((p) => solvedIds[p.id]);
+  function markDifficultyButtons() {
+    segDiff.querySelectorAll('button').forEach((b) => {
+      b.classList.toggle('active', +b.dataset.value === difficulty);
+    });
   }
 
   function updateHintUI() {
@@ -649,9 +651,8 @@
     hintCreditsEl.textContent = hintCredits + word;
     btnHint.textContent = 'Hint (' + hintCredits + ')';
     puzzleHintsEl.textContent = hintCredits + word;
-    const ps = levelPuzzles(currentLevel);
-    puzzlePanelProgress.textContent = 'Level ' + currentLevel + ' \u00b7 ' +
-      levelSolvedCount(currentLevel) + '/' + ps.length + ' solved';
+    const ps = PUZZLES;
+    puzzlePanelProgress.textContent = solvedCount() + ' of ' + ps.length + ' solved';
   }
 
   // ---- puzzle board rendering ----
@@ -719,21 +720,12 @@
       puzzleSqEls[puzzleSelected].classList.add('selected');
       for (const m of puzzleMoves) puzzleSqEls[m.to].classList.add(m.captured ? 'capturable' : 'dot');
     }
-    if (puzzleGame.inCheck()) {
+    if (currentPuzzle && currentPuzzle.kind === 'line' && puzzleGame.inCheck()) {
       puzzleSqEls[puzzleGame.state.kings[puzzleGame.state.turn > 0 ? 0 : 1]].classList.add('check');
     }
   }
 
   function renderPuzzle() { renderPuzzlePieces(); renderPuzzleHighlights(); }
-
-  function goalText(goal, p) {
-    if (goal === 'mate1') return 'mate in 1';
-    if (goal === 'mate2') return 'mate in 2';
-    if (goal === 'mate3') return 'mate in 3';
-    if (goal === 'winrook') return 'win the rook with a fork';
-    if (goal === 'line') return (p && p.player === 'b') ? "reconstruct Black's moves" : 'find the construction';
-    return 'solve it';
-  }
 
   function puzzleStatus(msg, cls) {
     puzzleStatusEl.className = 'puzzle-status' + (cls ? ' ' + cls : '');
@@ -747,81 +739,113 @@
     closeModal(newgameModal);
     closeModal(gameoverModal);
     openModal(puzzleModal);
-    if (!levelUnlocked(currentLevel)) currentLevel = 1;
     resizePuzzleBoard();
-    renderLevelPills();
-    const ps = levelPuzzles(currentLevel);
-    let idx = ps.findIndex((p) => !solvedIds[p.id]);
-    if (idx < 0) idx = 0;
-    loadPuzzle(currentLevel, idx);
+    const idx = firstUnsolvedFrom(currentIndex);
+    if (idx < 0) { showAllSolved(); return; }
+    loadPuzzle(idx);
   }
 
-  function renderLevelPills() {
-    puzzleLevelsEl.innerHTML = '';
-    PUZZLES.forEach((l) => {
+  // ---- the answers for a 'question' puzzle ----
+  function renderPuzzleAnswers() {
+    puzzleAnswersEl.innerHTML = '';
+    const p = currentPuzzle;
+    if (!p || p.kind !== 'question' || !p.choices) return;
+    p.choices.forEach((text, i) => {
       const b = document.createElement('button');
-      b.className = 'level-pill' + (l.level === currentLevel ? ' active' : '');
-      b.textContent = l.level;
-      b.disabled = !levelUnlocked(l.level);
-      b.title = l.name + (levelUnlocked(l.level) ? '' : ' (locked \u2014 solve the previous level)');
-      b.addEventListener('click', () => {
-        if (!levelUnlocked(l.level)) return;
-        currentLevel = l.level;
-        saveProgress();
-        const ps = levelPuzzles(l.level);
-        let idx = ps.findIndex((p) => !solvedIds[p.id]);
-        if (idx < 0) idx = 0;
-        loadPuzzle(l.level, idx);
-        renderLevelPills();
-        updateHintUI();
-      });
-      puzzleLevelsEl.appendChild(b);
+      b.className = 'btn';
+      b.textContent = text;
+      b.addEventListener('click', () => attemptAnswer(i, b));
+      puzzleAnswersEl.appendChild(b);
     });
   }
 
-  function loadPuzzle(level, index) {
-    const lvl = PUZZLES.find((x) => x.level === level);
-    if (!lvl || !lvl.puzzles.length) return;
-    const ps = lvl.puzzles;
-    const p = ps[((index % ps.length) + ps.length) % ps.length];
+  function lockAnswers(lock) {
+    puzzleAnswersEl.querySelectorAll('button').forEach((b) => { b.disabled = lock; });
+  }
+
+  function attemptAnswer(index, btn) {
+    if (!currentPuzzle || currentPuzzle.kind !== 'question') return;
+    if (puzzlePhase !== 'player') return;
+    if (index === currentPuzzle.answer) {
+      btn.classList.add('correct');
+      lockAnswers(true);
+      solvePuzzle();
+    } else {
+      btn.classList.add('wrong');
+      btn.disabled = true;
+      puzzleStatus('Not quite \u2014 try again', 'wrong');
+      puzzleAnswersEl.classList.add('puzzle-shake');
+      setTimeout(() => puzzleAnswersEl.classList.remove('puzzle-shake'), 320);
+    }
+  }
+
+  function showAllSolved() {
+    currentPuzzle = null;
+    puzzleGame = null;
+    puzzlePhase = 'done';
+    puzzleAnswersEl.innerHTML = '';
+    puzzleBoardEl.innerHTML = '';
+    puzzleLevelLabel.textContent = 'All done';
+    puzzleThemeEl.textContent = 'Every puzzle in the set has been solved.';
+    puzzleStatus('All ' + PUZZLES.length + ' puzzles solved \u2014 well played!', 'solved');
+    puzzleProgressText.textContent = 'Complete';
+    puzzleProgressFill.style.width = '100%';
+    btnPuzzleNext.disabled = true;
+  }
+
+  function loadPuzzle(index) {
+    if (index < 0 || index >= PUZZLES.length) return;
+    const p = PUZZLES[index];
+    const solved = !!solvedIds[p.id];
+    currentIndex = index;
     currentPuzzle = p;
-    currentLevel = level;
-    puzzleGame = new C.Game(p.fen);
+    puzzleGame = p.fen ? new C.Game(p.fen) : null;
     puzzleSelected = -1;
     puzzleMoves = [];
     puzzleLast = null;
     puzzleBusy = false;
-    puzzlePhase = 'player';
-    puzzleStage = p.goal === 'winrook' ? 'fork' : 'mate';
-    puzzlePlies = p.goal === 'mate1' ? 1 : p.goal === 'mate2' ? 3 : p.goal === 'mate3' ? 5 : 0;
+    puzzlePhase = solved ? 'solved' : 'player';
+    puzzleStage = p.kind;
+    puzzlePlies = 0;
     puzzleLineIdx = 0;
-    puzzlePlayer = p.player === 'b' ? -1 : (p.player === 'w' ? 1 : puzzleGame.state.turn);
+    puzzlePlayer = p.player === 'b' ? -1 : (p.player === 'w' ? 1 : (puzzleGame ? puzzleGame.state.turn : 1));
     puzzleFlipped = puzzlePlayer === -1;
     const side = puzzlePlayer === 1 ? 'White' : 'Black';
-    puzzleLevelLabel.textContent = 'Level ' + level + ' \u00b7 ' + lvl.name;
-    puzzleThemeEl.textContent = p.theme + (p.note ? ' \u2014 ' + p.note : '');
-    puzzleStatus(side + ' to move \u2014 ' + goalText(p.goal, p), null);
-    puzzleProgressText.textContent = 'Puzzle ' + (ps.indexOf(p) + 1) + ' of ' + ps.length;
-    puzzleProgressFill.style.width = (levelSolvedCount(level) / ps.length * 100) + '%';
-    btnPuzzleNext.disabled = !solvedIds[p.id];
+    puzzleLevelLabel.textContent = p.source || 'Puzzle';
+    puzzleThemeEl.textContent = p.theme + (p.note ? ' \u2014 ' + p.note : '') +
+      (p.kind === 'question' ? ' ' + p.question : '');
+    puzzleProgressText.textContent = 'Puzzle ' + (index + 1) + ' of ' + PUZZLES.length;
+    puzzleProgressFill.style.width = (solvedCount() / PUZZLES.length * 100) + '%';
+    btnPuzzleNext.disabled = false;
     buildPuzzleBoard();
+    renderPuzzleAnswers();
     renderPuzzle();
+    if (solved) {
+      puzzleStatus('Solved \u2014 this one is done.', 'solved');
+      lockAnswers(true);
+    } else if (p.kind === 'question') {
+      puzzleStatus('Choose an answer', null);
+    } else {
+      puzzleStatus(side + ' to move \u2014 play the book\u2019s line', null);
+    }
     updateHintUI();
     // 'line' puzzles can start with the opponent to move: play their move for them
-    if (p.goal === 'line' && puzzleGame.state.turn !== puzzlePlayer) {
+    if (!solved && p.kind === 'line' && puzzleGame && puzzleGame.state.turn !== puzzlePlayer) {
       puzzleBusy = true;
       puzzleStatus('Opponent plays \u2014 watch', 'good');
       setTimeout(() => {
         playLineMove();
         puzzleBusy = false;
-        puzzleStatus(side + ' to move \u2014 ' + goalText(p.goal, p), null);
+        if (puzzleLineIdx >= p.line.length) { solvePuzzle(); return; }
+        puzzleStatus(side + ' to move \u2014 play the book\u2019s line', null);
         renderPuzzle();
       }, 600);
     }
   }
 
   function onPuzzleClick(sq) {
-    if (!puzzleGame || puzzleBusy || puzzlePhase !== 'player') return;
+    if (!puzzleGame || !currentPuzzle || currentPuzzle.kind !== 'line') return;
+    if (puzzleBusy || puzzlePhase !== 'player') return;
     if (puzzleGame.state.turn !== puzzlePlayer) return;   // only the solver's moves
     if (puzzleSelected >= 0 && puzzleMoves.some((m) => m.to === sq)) {
       attemptPuzzleMove(puzzleSelected, sq);
@@ -877,7 +901,7 @@
     const cands = puzzleGame.moves().filter((m) => m.from === from && m.to === to);
     if (!cands.length) return;
     const promo = cands.length > 1 ? 5 : (cands[0].promotion || 0);   // auto-queen in puzzles
-    const goal = currentPuzzle.goal;
+    const goal = currentPuzzle.kind;
     const rookBefore = goal === 'winrook' ? blackRookSq() : -1;
 
     puzzleGame.move(from, to, promo);
@@ -896,7 +920,8 @@
       setTimeout(() => {
         playLineMove();
         puzzleBusy = false;
-        puzzleStatus('Your move \u2014 ' + goalText(goal, currentPuzzle), 'good');
+        if (puzzleLineIdx >= currentPuzzle.line.length) { solvePuzzle(); return; }
+        puzzleStatus('Your move \u2014 keep going', 'good');
         renderPuzzle();
       }, 420);
       return;
@@ -958,7 +983,7 @@
     let best = replies[0], bestScore = -Infinity;
     for (const r of replies) {
       puzzleGame.move(r.from, r.to, r.promotion || 0);
-      const score = currentPuzzle.goal === 'winrook'
+      const score = currentPuzzle.kind === 'winrook'
         ? -C.AI.evaluate(puzzleGame.state)               // black's point of view
         : C.AI.mateIn(puzzleGame.state, 4);              // longest defence
       puzzleGame.undo();
@@ -971,33 +996,28 @@
   }
 
   function solvePuzzle() {
+    if (!currentPuzzle) return;
     puzzlePhase = 'solved';
     const already = !!solvedIds[currentPuzzle.id];
-    let msg = already ? 'Solved again \u2014 nice' : 'Solved! +1 hint earned (' + (hintCredits + 1) + ' total)';
+    let msg = already ? 'Already solved' : 'Solved! +1 hint earned (' + (hintCredits + 1) + ' total)';
     if (!already) {
       solvedIds[currentPuzzle.id] = true;
       hintCredits++;
       saveProgress();
     }
+    if (currentPuzzle.explain) msg = 'Solved! ' + currentPuzzle.explain;
     playSound('end');
     btnPuzzleNext.disabled = false;
-    const ps = levelPuzzles(currentLevel);
-    if (ps.every((p) => solvedIds[p.id]) && currentLevel < 5) {
-      msg = 'Level ' + currentLevel + ' complete! Level ' + (currentLevel + 1) + ' unlocked.';
-    }
     puzzleStatus(msg, 'solved');
-    puzzleProgressFill.style.width = (levelSolvedCount(currentLevel) / ps.length * 100) + '%';
+    puzzleProgressFill.style.width = (solvedCount() / PUZZLES.length * 100) + '%';
     renderPuzzle();
-    renderLevelPills();
     updateHintUI();
   }
 
   function nextPuzzle() {
-    const ps = levelPuzzles(currentLevel);
-    let idx = ps.findIndex((p) => !solvedIds[p.id]);
-    if (idx < 0) idx = (ps.indexOf(currentPuzzle) + 1) % ps.length;
-    loadPuzzle(currentLevel, idx);
-    renderLevelPills();
+    const idx = firstUnsolvedFrom(currentIndex + 1);
+    if (idx < 0) { showAllSolved(); return; }
+    loadPuzzle(idx);
   }
 
   // ---------- events ----------
@@ -1007,10 +1027,10 @@
       if (dragState) e.preventDefault();
     });
 
-    btnNew.addEventListener('click', () => openModal(newgameModal));
+    btnNew.addEventListener('click', () => { markDifficultyButtons(); openModal(newgameModal); });
     $('btn-cancel-new').addEventListener('click', () => closeModal(newgameModal));
 
-    [segColor].forEach((seg) => {
+    [segColor, segDiff].forEach((seg) => {
       seg.addEventListener('click', (e) => {
         const b = e.target.closest('button');
         if (!b) return;
@@ -1022,7 +1042,7 @@
     $('btn-start').addEventListener('click', () => {
       let color = segValue(segColor);
       if (color === 'r') color = Math.random() < 0.5 ? 'w' : 'b';
-      difficulty = +difficultySelect.value;
+      difficulty = +segValue(segDiff);
       saveProgress();
       closeModal(newgameModal);
       closeModal(gameoverModal);
@@ -1074,12 +1094,6 @@
       document.body.dataset.theme = themeSelect.value;
     });
 
-    // Difficulty is a live game control: it applies to the engine's next move.
-    difficultySelect.addEventListener('change', () => {
-      difficulty = +difficultySelect.value;
-      saveProgress();
-    });
-
     $('btn-cancel-promo').addEventListener('click', () => {
       closeModal(promotionModal);
       pendingPromo = null;
@@ -1089,7 +1103,8 @@
     btnPuzzles.addEventListener('click', openPuzzles);
     btnPuzzleClose.addEventListener('click', () => closeModal(puzzleModal));
     btnPuzzleReset.addEventListener('click', () => {
-      if (currentPuzzle) loadPuzzle(currentLevel, levelPuzzles(currentLevel).indexOf(currentPuzzle));
+      if (!currentPuzzle || solvedIds[currentPuzzle.id]) return;
+      loadPuzzle(currentIndex);
     });
     btnPuzzleNext.addEventListener('click', nextPuzzle);
 
