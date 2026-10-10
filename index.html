@@ -47,13 +47,19 @@
         <button id="btn-new" class="btn primary">New game</button>
         <button id="btn-undo" class="btn">Undo</button>
         <button id="btn-flip" class="btn">Flip</button>
-        <button id="btn-hint" class="btn">Hint</button>
+        <button id="btn-hint" class="btn">Hint (0)</button>
+        <button id="btn-puzzles" class="btn">Puzzles</button>
         <button id="btn-sound" class="btn btn-sound">Sound: on</button>
       </div>
 
       <div class="eval-wrap" title="Engine evaluation">
         <div class="eval-bar"><div id="eval-fill" class="eval-fill"></div></div>
         <span id="eval-text" class="eval-text">0.0</span>
+      </div>
+
+      <div class="puzzle-panel">
+        <div class="puzzle-panel-row"><span>Puzzle training</span><span id="hint-credits" class="hint-credits">0 hints</span></div>
+        <div class="puzzle-panel-row" id="puzzle-panel-progress">Level 1 &middot; 0/4 solved</div>
       </div>
 
       <div class="movelist-box">
@@ -100,6 +106,31 @@
   </div>
 </div>
 
+<!-- Puzzle trainer modal -->
+<div id="puzzle-modal" class="modal hidden">
+  <div class="modal-card puzzle-card">
+    <div class="puzzle-head">
+      <div>
+        <div class="puzzle-level" id="puzzle-level-label">Level 1</div>
+        <div class="puzzle-theme" id="puzzle-theme">Puzzle</div>
+      </div>
+      <div class="puzzle-hints" id="puzzle-hints">0 hints</div>
+    </div>
+    <div class="puzzle-levels" id="puzzle-levels"></div>
+    <div class="puzzle-progress"><div class="puzzle-progress-fill" id="puzzle-progress-fill"></div></div>
+    <div class="puzzle-progress-text" id="puzzle-progress-text">Puzzle 1 of 4</div>
+    <div class="puzzle-board-wrap">
+      <div id="puzzle-board" class="board puzzle-board"></div>
+    </div>
+    <div class="puzzle-status" id="puzzle-status">White to move</div>
+    <div class="modal-actions">
+      <button id="btn-puzzle-next" class="btn primary" disabled>Next puzzle</button>
+      <button id="btn-puzzle-reset" class="btn">Reset</button>
+      <button id="btn-puzzle-close" class="btn">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- New game modal -->
 <div id="newgame-modal" class="modal hidden">
   <div class="modal-card">
@@ -128,6 +159,7 @@
 </div>
 
 <script src="js/engine.js"></script>
+<script src="js/puzzles.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
