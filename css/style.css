@@ -510,6 +510,13 @@ footer {
 #gameover-title.loss { color: #ff8f8f; }
 #gameover-title.draw { color: #ffd98a; }
 
+.modal-note {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+
 /* ---------- puzzle training ---------- */
 .puzzle-panel {
   display: flex;
