@@ -42,6 +42,7 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Play as White, Black, or random side; board flip
 - Engine strength is chosen before the game, in the New Game dialog
 - A large board (up to 860px) that scales with the window
+- **Game points:** the evaluation of every position you pass through (the same figure as the eval bar) is accumulated live, then settled at the end — a **win multiplies** the total by the level's stake (×5 / ×10 / ×15 / ×20 / ×30), a **loss divides** it by the same stake, a **draw leaves it as it is** (×1)
 - Four board themes (Classic, Emerald, Ocean, Midnight)
 - Synthesized sound effects (move, capture, castle, check, game end) via Web Audio
 - Fully responsive layout for phones and desktops
@@ -71,6 +72,7 @@ node tests/puzzles.test.js
 - The board is a flat `Int8Array(64)` (index 0 = a8), pieces signed by color — fast enough for a depth-3 alpha-beta search with quiescence in plain JavaScript.
 - The engine module is UMD-style: the same file powers the browser game and the Node test suite.
 - Every puzzle ships from the connected knowledge base (Martin Gardner's chess chapter) and is re-checked by `tests/puzzles.test.js`. The chapter's board positions are played on the board; its logic problems are posed as multiple-choice questions with the book's own answers.
+- The game-point maths lives in the engine as `Chess.Scoring` (`levelMultiplier(level)`, `finalScore(accumulated, outcome, level)`) so it is unit-tested rather than buried in the UI.
 - One Gardner problem (Fabel's "Don't Mate in One") could not be reconstructed faithfully from the source figure and was left out rather than guessed at.
 
 ## License
