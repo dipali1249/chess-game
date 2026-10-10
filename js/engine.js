@@ -3,7 +3,7 @@
    Complete rules: castling, en passant, promotion, checks,
    checkmate, stalemate, 50-move rule, threefold repetition,
    insufficient material. AI: negamax + alpha-beta + quiescence
-   with piece-square-table evaluation.
+   with piece-square-table evaluation. Mate search for puzzles.
 
    Board: Int8Array(64). Index 0 = a8 (top-left), 63 = h1.
    Pieces: positive = white, negative = black.
@@ -624,6 +624,39 @@
     return best;
   }
 
+  // ---------- mate search (used by the puzzle trainer) ----------
+  // Dedicated mate search: unlike the playing search, it tests for mate BEFORE
+  // the depth cut-off, so a mate on the very last ply is scored correctly.
+  function mateNegamax(state, depth, alpha, beta, ply) {
+    var moves = generateMoves(state);
+    if (!moves.length) return inCheck(state, state.turn) ? -(MATE - ply) : 0;
+    if (depth === 0) return state.turn * evaluate(state);
+    orderMoves(moves);
+    var best = -Infinity;
+    for (var i = 0; i < moves.length; i++) {
+      makeMove(state, moves[i]);
+      var sc = -mateNegamax(state, depth - 1, -beta, -alpha, ply + 1);
+      undoMove(state, moves[i]);
+      if (sc > best) best = sc;
+      if (best > alpha) alpha = best;
+      if (alpha >= beta) break;
+    }
+    return best;
+  }
+
+  function mateWithin(state, plies) {
+    if (plies <= 0) return false;
+    return mateNegamax(state, plies, -Infinity, Infinity, 0) <= -(MATE - plies);
+  }
+
+  function mateIn(state, maxMoves) {
+    for (var n = 1; n <= maxMoves; n++) {
+      var D = 2 * n - 1;
+      if (mateNegamax(state, D, MATE - D - 1, Infinity, 0) >= MATE - D) return n;
+    }
+    return 0;
+  }
+
   var AI = {
     // level: 1 easy, 2 medium, 3 hard
     search: function (state, level) {
@@ -631,7 +664,9 @@
       if (level === 2) return searchRoot(state, 2, 12, true);
       return searchRoot(state, 3, 0, true);
     },
-    evaluate: evaluate
+    evaluate: evaluate,
+    mateIn: mateIn,
+    mateWithin: mateWithin
   };
 
   // ---------- perft ----------
