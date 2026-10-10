@@ -59,7 +59,7 @@
 
       <div class="puzzle-panel">
         <div class="puzzle-panel-row"><span>Puzzle training</span><span id="hint-credits" class="hint-credits">0 hints</span></div>
-        <div class="puzzle-panel-row" id="puzzle-panel-progress">Level 1 &middot; 0/4 solved</div>
+        <div class="puzzle-panel-row" id="puzzle-panel-progress">0 of 7 solved</div>
       </div>
 
       <div class="movelist-box">
@@ -74,16 +74,6 @@
             <option value="emerald">Emerald</option>
             <option value="ocean">Ocean</option>
             <option value="midnight">Midnight</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="settings-row">
-        <label>Difficulty
-          <select id="difficulty-select">
-            <option value="1">Easy</option>
-            <option value="2" selected>Medium</option>
-            <option value="3">Hard</option>
           </select>
         </label>
       </div>
@@ -126,12 +116,12 @@
       </div>
       <div class="puzzle-hints" id="puzzle-hints">0 hints</div>
     </div>
-    <div class="puzzle-levels" id="puzzle-levels"></div>
     <div class="puzzle-progress"><div class="puzzle-progress-fill" id="puzzle-progress-fill"></div></div>
-    <div class="puzzle-progress-text" id="puzzle-progress-text">Puzzle 1 of 4</div>
+    <div class="puzzle-progress-text" id="puzzle-progress-text">Puzzle 1</div>
     <div class="puzzle-board-wrap">
       <div id="puzzle-board" class="board puzzle-board"></div>
     </div>
+    <div class="puzzle-answers" id="puzzle-answers"></div>
     <div class="puzzle-status" id="puzzle-status">White to move</div>
     <div class="modal-actions">
       <button id="btn-puzzle-next" class="btn primary" disabled>Next puzzle</button>
@@ -153,7 +143,16 @@
         <button data-value="r">Random</button>
       </div>
     </div>
-    <p class="modal-note">Engine strength is set by the Difficulty control on the side panel &mdash; you can change it at any time, even mid-game.</p>
+    <div class="option-group">
+      <div class="option-label">Difficulty</div>
+      <div class="segmented" id="seg-diff">
+        <button data-value="1">Beginner</button>
+        <button data-value="2">Casual</button>
+        <button data-value="3" class="active">Club</button>
+        <button data-value="4">Strong</button>
+        <button data-value="5">Expert</button>
+      </div>
+    </div>
     <div class="modal-actions">
       <button id="btn-start" class="btn primary">Start game</button>
       <button id="btn-cancel-new" class="btn">Cancel</button>
