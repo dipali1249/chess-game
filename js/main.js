@@ -265,17 +265,41 @@
     scoreMultEl.textContent = 'Win \u00d7' + m + ' \u00b7 Loss \u00f7' + m + ' \u00b7 Draw \u00d71';
   }
 
+  function setClockText(el, text) {
+    const span = el.querySelector('.clock-time');
+    if (span) span.textContent = text; else el.textContent = text;
+  }
+
   function renderClocks() {
     const topColor = -playerColor;
     const top = clocks[String(topColor)];
     const bottom = clocks[String(playerColor)];
-    clockTopEl.textContent = fmtClock(top);
-    clockBottomEl.textContent = fmtClock(bottom);
+    setClockText(clockTopEl, fmtClock(top));
+    setClockText(clockBottomEl, fmtClock(bottom));
     const active = game.state.turn;
     clockTopEl.classList.toggle('active', !over && active === topColor && game.state.history.length > 0);
     clockBottomEl.classList.toggle('active', !over && active === playerColor && game.state.history.length > 0);
     clockTopEl.classList.toggle('low', top <= 30);
     clockBottomEl.classList.toggle('low', bottom <= 30);
+  }
+
+  // ---------- time bonuses ----------
+  // After the move just played, the level's schedule may hand the mover extra time.
+  // The computer only collects these at levels 1 and 5, so other levels skip its turn.
+  function applyTimeBonus() {
+    const ply = game.state.history.length;        // plies played so far
+    const mover = -game.state.turn;               // the side that just moved
+    const isPlayer = mover === playerColor;
+    if (!isPlayer && !C.Scoring.computerGetsBonus(difficulty)) return;
+    const inc = C.Scoring.timeBonus(difficulty, ply);
+    if (!inc) return;
+    clocks[String(mover)] += inc;
+    renderClocks();
+    const badge = document.createElement('span');
+    badge.className = 'clock-bonus';
+    badge.textContent = '+' + fmtClock(inc);
+    (isPlayer ? clockBottomEl : clockTopEl).appendChild(badge);
+    setTimeout(() => badge.remove(), 1500);
   }
 
   function fmtClock(s) {
@@ -409,6 +433,7 @@
       finishGame();
       return true;
     }
+    applyTimeBonus();
     if (game.inCheck()) playSound('check');
     scheduleAI();
     return true;
