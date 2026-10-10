@@ -34,7 +34,7 @@
   const gameoverText = $('gameover-text');
   const newgameModal = $('newgame-modal');
   const segColor = $('seg-color');
-  const segDiff = $('seg-diff');
+  const difficultySelect = $('difficulty-select');
   const puzzleModal = $('puzzle-modal');
   const puzzleBoardEl = $('puzzle-board');
   const puzzleLevelsEl = $('puzzle-levels');
@@ -90,9 +90,10 @@
     buildBoard();
     bindEvents();
     loadProgress();
+    difficultySelect.value = String(difficulty);
     updateHintUI();
     openModal(newgameModal);
-    newGame(1, 2);
+    newGame(1, difficulty);
   }
 
   // ---------- board construction ----------
@@ -609,6 +610,7 @@
         hintCredits = p.hintCredits || 0;
         solvedIds = p.solvedIds || {};
         currentLevel = p.currentLevel || 1;
+        difficulty = p.difficulty || 2;
       }
     } catch (e) { /* storage unavailable */ }
   }
@@ -616,7 +618,8 @@
   function saveProgress() {
     try {
       window.localStorage.setItem('royalchess.progress', JSON.stringify({
-        hintCredits: hintCredits, solvedIds: solvedIds, currentLevel: currentLevel
+        hintCredits: hintCredits, solvedIds: solvedIds, currentLevel: currentLevel,
+        difficulty: difficulty
       }));
     } catch (e) { /* ignore */ }
   }
@@ -948,7 +951,7 @@
     btnNew.addEventListener('click', () => openModal(newgameModal));
     $('btn-cancel-new').addEventListener('click', () => closeModal(newgameModal));
 
-    [segColor, segDiff].forEach((seg) => {
+    [segColor].forEach((seg) => {
       seg.addEventListener('click', (e) => {
         const b = e.target.closest('button');
         if (!b) return;
@@ -960,10 +963,11 @@
     $('btn-start').addEventListener('click', () => {
       let color = segValue(segColor);
       if (color === 'r') color = Math.random() < 0.5 ? 'w' : 'b';
-      const diff = +segValue(segDiff);
+      difficulty = +difficultySelect.value;
+      saveProgress();
       closeModal(newgameModal);
       closeModal(gameoverModal);
-      newGame(color === 'w' ? 1 : -1, diff);
+      newGame(color === 'w' ? 1 : -1, difficulty);
     });
 
     btnUndo.addEventListener('click', () => {
@@ -1009,6 +1013,12 @@
 
     themeSelect.addEventListener('change', () => {
       document.body.dataset.theme = themeSelect.value;
+    });
+
+    // Difficulty is a live game control: it applies to the engine's next move.
+    difficultySelect.addEventListener('change', () => {
+      difficulty = +difficultySelect.value;
+      saveProgress();
     });
 
     $('btn-cancel-promo').addEventListener('click', () => {
