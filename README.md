@@ -1,6 +1,6 @@
 # Royal Chess
 
-An advanced, dependency-free chess game with a complete rules engine and a built-in AI opponent — playable in any modern browser.
+An advanced, dependency-free chess game with a complete rules engine, a built-in AI opponent, and a puzzle trainer that earns you hints — playable in any modern browser.
 
 ## Play it
 
@@ -24,15 +24,21 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Piece-square-table evaluation with tapered king tables and bishop-pair bonus
 - Three difficulty levels: Easy / Medium / Hard
 
+### Puzzle training (earn your hints)
+- 5 levels, 20 puzzles, every one machine-verified by the engine
+- Level 1 mate in 1 &middot; Level 2 mate in 2 &middot; Level 3 win a rook with a knight fork &middot; Level 4 mate in 2 (harder) &middot; Level 5 mate in 3
+- Levels unlock as you solve them; progress is saved in your browser
+- **Hints are earned, not given:** each solved puzzle grants one hint credit, and the Hint button costs one credit. With none left, it opens the trainer.
+- Any correct solution is accepted (validated by the engine's mate search), not just one hard-coded line
+
 ### Interface
 - Drag-and-drop **and** tap/click-to-move (works on touch)
 - Legal-move dots, capture rings, last-move and check highlights
-- Live evaluation bar and material captured display
+- Live evaluation bar (from your side) and material captured display
 - Move list in SAN with auto-scroll
 - 10-minute clocks per side with time-forfeit detection
-- Hint button (engine suggests a move)
 - Undo (takes back both your move and the engine's reply)
-- Promotion picker, game-over and new-game dialogs
+- Promotion picker (with cancel), game-over and new-game dialogs
 - Play as White, Black, or random side; board flip
 - Four board themes (Classic, Emerald, Ocean, Midnight)
 - Synthesized sound effects (move, capture, castle, check, game end) via Web Audio
@@ -42,23 +48,27 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 
 ```
 chess-game/
-├── index.html            # page layout and modals
-├── css/style.css         # all styling and themes
-├── js/engine.js          # rules engine + AI (runs in browser and Node)
-├── js/main.js            # UI, drag & drop, clocks, sounds
-└── tests/engine.test.js  # perft + rules tests (run with Node)
+├── index.html              # page layout and modals
+├── css/style.css           # all styling and themes
+├── js/engine.js            # rules engine + AI + mate search (browser and Node)
+├── js/puzzles.js           # the built-in 5-level puzzle set
+├── js/main.js              # UI, drag & drop, clocks, sounds, puzzle trainer
+├── tests/engine.test.js    # perft + rules + AI tests
+└── tests/puzzles.test.js   # re-verifies every shipped puzzle
 ```
 
 ## Run the tests
 
 ```bash
 node tests/engine.test.js
+node tests/puzzles.test.js
 ```
 
 ## Tech notes
 
 - The board is a flat `Int8Array(64)` (index 0 = a8), pieces signed by color — fast enough for a depth-3 alpha-beta search with quiescence in plain JavaScript.
 - The engine module is UMD-style: the same file powers the browser game and the Node test suite.
+- Puzzles are generated and verified offline by the engine itself (forced mates found with a mate-window search), then re-checked by `tests/puzzles.test.js` on every run.
 
 ## License
 
