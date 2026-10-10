@@ -45,11 +45,11 @@ function replay(fen, line) {
 }
 
 // ---- structure ----
-assert.strictEqual(LEVELS.length, 5, 'there must be 5 levels');
+assert.ok(LEVELS.length >= 6, 'there are at least 6 levels');
 LEVELS.forEach((l, i) => {
-  assert.strictEqual(l.level, i + 1, 'levels are ordered 1..5');
+  assert.strictEqual(l.level, i + 1, 'levels are ordered');
   assert.ok(l.name && l.blurb, 'level ' + l.level + ' has a name and blurb');
-  assert.ok(l.puzzles.length >= 3, 'level ' + l.level + ' has at least 3 puzzles');
+  assert.ok(l.puzzles.length >= (l.bonus ? 2 : 3), 'level ' + l.level + ' has enough puzzles');
   const ids = new Set();
   l.puzzles.forEach((p) => {
     assert.ok(p.id && p.theme && p.fen && p.goal, 'puzzle fields present in level ' + l.level);
@@ -57,7 +57,7 @@ LEVELS.forEach((l, i) => {
     ids.add(p.id);
   });
 });
-console.log('structure OK: 5 levels, ' + LEVELS.reduce((s, l) => s + l.puzzles.length, 0) + ' puzzles');
+console.log('structure OK: ' + LEVELS.length + ' levels, ' + LEVELS.reduce((s, l) => s + l.puzzles.length, 0) + ' puzzles');
 
 // ---- per-puzzle verification ----
 let checked = 0;
@@ -139,6 +139,23 @@ for (const level of LEVELS) {
       let endRook = -1;
       for (let i = 0; i < 64; i++) if (end.state.board[i] === -4) endRook = i;
       assert.strictEqual(endRook, -1, p.id + ' reference line should win the rook');
+    } else if (p.goal === 'line') {
+      // every move of the stored line must be legal, and the solver colour must be named
+      assert.ok(p.player === 'w' || p.player === 'b', p.id + ' names the solver colour');
+      const end = replay(p.fen, p.line);
+      if (p.endsInMate) {
+        assert.strictEqual(end.moves().length, 0, p.id + ' line must end in mate');
+        assert.ok(end.inCheck(), p.id + ' line must end in check');
+      }
+      // the trainer hands the solver the moves on their own colour's turns
+      const initial = new Chess.Game(p.fen).state.turn;
+      const playerCol = p.player === 'b' ? -1 : 1;
+      let solverMoves = 0;
+      for (let i = 0; i < p.line.length; i++) {
+        const side = (i % 2 === 0) ? initial : -initial;
+        if (side === playerCol) solverMoves++;
+      }
+      assert.ok(solverMoves >= 1, p.id + ' must give the solver at least one move');
     } else {
       throw new Error('unknown goal ' + p.goal);
     }
@@ -150,6 +167,7 @@ console.log('verified all ' + checked + ' puzzles');
 // ---- trainer acceptance: the reference solution must satisfy the UI's rules ----
 for (const level of LEVELS) {
   for (const p of level.puzzles) {
+    if (p.goal === 'line') continue;                  // 'line' puzzles are verified above
     const g = new Chess.Game(p.fen);
     let plies = p.goal === 'mate1' ? 1 : p.goal === 'mate2' ? 3 : p.goal === 'mate3' ? 5 : 0;
     let stage = p.goal === 'winrook' ? 'fork' : 'mate';
