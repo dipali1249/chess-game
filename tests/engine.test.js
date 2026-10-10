@@ -146,4 +146,20 @@ for (let level = 1; level <= 5; level++) {
 assert.strictEqual(Chess.AI.mateIn(new Chess.Game('6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1').state, 2), 1);
 console.log('five difficulty levels OK (all return legal moves)');
 
+// ---- game points (Scoring) ----
+const near = (a, b) => Math.abs(a - b) < 1e-9;
+assert.deepStrictEqual(Chess.Scoring.LEVEL_MULTIPLIER, [5, 10, 15, 20, 30]);
+for (let lvl = 1; lvl <= 5; lvl++) {
+  assert.strictEqual(Chess.Scoring.levelMultiplier(lvl), [5, 10, 15, 20, 30][lvl - 1]);
+}
+assert.strictEqual(Chess.Scoring.levelMultiplier(0), 5);    // clamped low
+assert.strictEqual(Chess.Scoring.levelMultiplier(9), 30);   // clamped high
+// win -> accumulate x stake, loss -> accumulate / stake, draw -> accumulate x 1
+assert.ok(near(Chess.Scoring.finalScore(12.4, 1, 3), 186), 'win multiplies by the level stake (x15)');
+assert.ok(near(Chess.Scoring.finalScore(12.4, -1, 4), 0.62), 'loss divides by the level stake (/20)');
+assert.ok(near(Chess.Scoring.finalScore(12.4, 0, 5), 12.4), 'draw leaves the total as-is (x1)');
+assert.ok(near(Chess.Scoring.finalScore(-9.5, 1, 1), -47.5), 'a negative total still scales on a win');
+assert.ok(near(Chess.Scoring.finalScore(-9.5, -1, 5), -9.5 / 30), 'a negative total is divided on a loss');
+console.log('game-point scoring OK (win x, loss /, draw x1)');
+
 console.log('\nAll engine tests passed.');
