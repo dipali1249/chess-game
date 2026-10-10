@@ -339,6 +339,35 @@ main {
   color: var(--text-dim);
 }
 
+/* game points */
+.score-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+}
+.score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.score-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.score-value.pos { color: #7ee08a; }
+.score-value.neg { color: #ff8f8f; }
+.score-mult { font-size: 0.72rem; }
+
 /* move list */
 .movelist-box {
   border: 1px solid var(--panel-border);
@@ -515,6 +544,30 @@ footer {
   color: var(--text-dim);
   line-height: 1.5;
   margin: 4px 0 0;
+}
+
+.gameover-score {
+  margin: 4px 0 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(124, 108, 240, 0.14);
+  border: 1px solid rgba(124, 108, 240, 0.3);
+  text-align: center;
+}
+.gameover-score:empty { display: none; }
+.gameover-score .final {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #ffd98a;
+  font-variant-numeric: tabular-nums;
+}
+.gameover-score .detail {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dim);
 }
 
 /* ---------- puzzle training ---------- */
