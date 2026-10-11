@@ -697,12 +697,12 @@
 
   // Turn an accumulated point total into the game score.
   //   outcome: 1 = the player won, -1 = the player lost, 0 = draw
-  //   win  -> accumulate x stake
+  //   win  -> |accumulate| x stake  (a win always pays positively, even on a negative total)
   //   loss -> accumulate / stake
   //   draw -> accumulate x 1
   function finalScore(accumulated, outcome, level) {
     var m = levelMultiplier(level);
-    if (outcome > 0) return accumulated * m;
+    if (outcome > 0) return Math.abs(accumulated) * m;
     if (outcome < 0) return accumulated / m;
     return accumulated;
   }
