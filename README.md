@@ -30,10 +30,11 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Closed levels are struck through and disabled in the New Game dialog, with a note explaining why; a saved difficulty that has since closed is moved up to the lowest level still open
 
 ### Puzzle training (earn your hints)
-- **Every puzzle comes from the connected knowledge base** (Martin Gardner's chess chapter) — nothing is generated locally
+- **Every puzzle is a real position with a solution line** — two from the connected knowledge base (Martin Gardner's chess chapter) and five daily puzzles from [Chess.com](https://www.chess.com/daily). Nothing is generated locally, and there are no multiple-choice questions.
 - No levels: one flat set, worked through in order
-- Board puzzles ask you to play the book's line; the rest are the book's own chess questions
-- **Each puzzle can be solved once.** Once solved it is locked and skipped — it can never be solved again in that session
+- Play the solution on the board; the opponent's replies are played for you
+- **Each puzzle can be solved once per match** — once solved it is locked and skipped
+- **The whole set resets after every match**, so the puzzles (and the hints they earn) start fresh each game
 - **Hints are earned, not given:** each solved puzzle grants one hint credit, and the Hint button costs one credit. With none left, it opens the trainer.
 
 ### Interface
@@ -78,7 +79,7 @@ chess-game/
 ├── index.html              # page layout and modals
 ├── css/style.css           # all styling and themes
 ├── js/engine.js            # rules engine + AI + mate search (browser and Node)
-├── js/puzzles.js           # the knowledge-base puzzle set (flat, no levels)
+├── js/puzzles.js           # the puzzle set (Gardner + Chess.com, flat, no levels)
 ├── js/main.js              # UI, drag & drop, clocks, sounds, puzzle trainer
 ├── tests/engine.test.js    # perft + rules + AI tests
 └── tests/puzzles.test.js   # re-verifies every shipped puzzle
@@ -95,7 +96,7 @@ node tests/puzzles.test.js
 
 - The board is a flat `Int8Array(64)` (index 0 = a8), pieces signed by color — fast enough for a depth-3 alpha-beta search with quiescence in plain JavaScript.
 - The engine module is UMD-style: the same file powers the browser game and the Node test suite.
-- Every puzzle ships from the connected knowledge base (Martin Gardner's chess chapter) and is re-checked by `tests/puzzles.test.js`. The chapter's board positions are played on the board; its logic problems are posed as multiple-choice questions with the book's own answers.
+- Every puzzle is a real position with a solution line — two from the connected knowledge base (Martin Gardner's chess chapter) and five from Chess.com's daily puzzle feed — and every line is replayed by `tests/puzzles.test.js` on each run.
 - The game-point maths lives in the engine as `Chess.Scoring` (`levelMultiplier(level)`, `finalScore(accumulated, outcome, level)`) so it is unit-tested rather than buried in the UI.
 - One Gardner problem (Fabel's "Don't Mate in One") could not be reconstructed faithfully from the source figure and was left out rather than guessed at.
 
