@@ -536,6 +536,11 @@ footer {
   color: #fff;
   box-shadow: 0 4px 12px rgba(124, 108, 240, 0.4);
 }
+.segmented button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
 
 .promo-row { display: flex; gap: 10px; justify-content: center; }
 .promo-btn {
