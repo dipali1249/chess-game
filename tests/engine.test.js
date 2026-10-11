@@ -158,7 +158,9 @@ assert.strictEqual(Chess.Scoring.levelMultiplier(9), 30);   // clamped high
 assert.ok(near(Chess.Scoring.finalScore(12.4, 1, 3), 186), 'win multiplies by the level stake (x15)');
 assert.ok(near(Chess.Scoring.finalScore(12.4, -1, 4), 0.62), 'loss divides by the level stake (/20)');
 assert.ok(near(Chess.Scoring.finalScore(12.4, 0, 5), 12.4), 'draw leaves the total as-is (x1)');
-assert.ok(near(Chess.Scoring.finalScore(-9.5, 1, 1), -47.5), 'a negative total still scales on a win');
+assert.ok(near(Chess.Scoring.finalScore(-9.5, 1, 1), 47.5), 'winning on a negative total pays positively');
+assert.ok(near(Chess.Scoring.finalScore(-9.5, 1, 3), 142.5), 'the win sign flip scales with the level stake too');
+assert.ok(near(Chess.Scoring.finalScore(-0.4, 1, 5), 12), 'a small negative win still pays positively');
 assert.ok(near(Chess.Scoring.finalScore(-9.5, -1, 5), -9.5 / 30), 'a negative total is divided on a loss');
 console.log('game-point scoring OK (win x, loss /, draw x1)');
 
