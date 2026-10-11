@@ -621,6 +621,7 @@
     gameoverTitle.textContent = title;
     gameoverText.textContent = text;
     renderGameScore();
+    resetPuzzles();               // the next match starts with the puzzles fresh again
     syncAll();
     setTimeout(() => openModal(gameoverModal), 350);
   }
@@ -707,6 +708,15 @@
         difficulty: difficulty, totalPoints: totalPoints
       }));
     } catch (e) { /* ignore */ }
+  }
+
+  // every match ends with a fresh puzzle slate, so the whole set can be worked again
+  function resetPuzzles() {
+    solvedIds = {};
+    hintCredits = 0;
+    currentIndex = 0;
+    saveProgress();
+    updateHintUI();
   }
 
   function solvedCount() {
@@ -838,7 +848,7 @@
     loadPuzzle(idx);
   }
 
-  // ---- the answers for a 'question' puzzle ----
+  // ---- the answers for a 'question' puzzle (none ship any more, kept for completeness) ----
   function renderPuzzleAnswers() {
     puzzleAnswersEl.innerHTML = '';
     const p = currentPuzzle;
@@ -919,7 +929,7 @@
     } else if (p.kind === 'question') {
       puzzleStatus('Choose an answer', null);
     } else {
-      puzzleStatus(side + ' to move \u2014 play the book\u2019s line', null);
+      puzzleStatus(side + ' to move \u2014 play the winning line', null);
     }
     updateHintUI();
     // 'line' puzzles can start with the opponent to move: play their move for them
@@ -930,7 +940,7 @@
         playLineMove();
         puzzleBusy = false;
         if (puzzleLineIdx >= p.line.length) { solvePuzzle(); return; }
-        puzzleStatus(side + ' to move \u2014 play the book\u2019s line', null);
+        puzzleStatus(side + ' to move \u2014 play the winning line', null);
         renderPuzzle();
       }, 600);
     }
