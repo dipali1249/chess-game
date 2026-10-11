@@ -195,4 +195,26 @@ assert.strictEqual(Chess.Scoring.computerGetsBonus(4), false);
 assert.strictEqual(Chess.Scoring.computerGetsBonus(5), true);
 console.log('time bonuses OK (per-level schedule + computer eligibility)');
 
+// ---- level gating by total game points ----
+// a level stays open while the running total is under its ceiling (100 / 300 / 1000 / 3000)
+assert.strictEqual(Chess.Scoring.levelPlayable(1, 0), true);
+assert.strictEqual(Chess.Scoring.levelPlayable(1, 99.9), true);
+assert.strictEqual(Chess.Scoring.levelPlayable(1, 100), false);    // closed at 100
+assert.strictEqual(Chess.Scoring.levelPlayable(2, 100), true);
+assert.strictEqual(Chess.Scoring.levelPlayable(2, 300), false);    // closed at 300
+assert.strictEqual(Chess.Scoring.levelPlayable(3, 300), true);
+assert.strictEqual(Chess.Scoring.levelPlayable(3, 1000), false);   // closed at 1000
+assert.strictEqual(Chess.Scoring.levelPlayable(4, 1000), true);
+assert.strictEqual(Chess.Scoring.levelPlayable(4, 3000), false);   // closed at 3000
+assert.strictEqual(Chess.Scoring.levelPlayable(5, 3000), true);    // level 5 never closes
+assert.strictEqual(Chess.Scoring.levelPlayable(5, 1e9), true);
+// the player is pushed to the lowest level still open to them
+assert.strictEqual(Chess.Scoring.lowestPlayableLevel(0), 1);
+assert.strictEqual(Chess.Scoring.lowestPlayableLevel(100), 2);
+assert.strictEqual(Chess.Scoring.lowestPlayableLevel(300), 3);
+assert.strictEqual(Chess.Scoring.lowestPlayableLevel(1000), 4);
+assert.strictEqual(Chess.Scoring.lowestPlayableLevel(3000), 5);
+assert.strictEqual(Chess.Scoring.lowestPlayableLevel(99999), 5);
+console.log('level gating OK (ceilings 100 / 300 / 1000 / 3000)');
+
 console.log('\nAll engine tests passed.');
