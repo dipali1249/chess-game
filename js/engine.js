@@ -742,13 +742,36 @@
     return n === 1 || n === 5;
   }
 
+  // ---- level gating by total game points ----
+  // A level stays open while the player's running total is under its ceiling. Once the
+  // total reaches the ceiling the level is closed and the player must move up a level.
+  var LEVEL_CEILING = [0, 100, 300, 1000, 3000, Infinity];
+
+  // is `level` still open to a player with `totalPoints`?
+  function levelPlayable(level, totalPoints) {
+    var n = clampLevel(level);
+    var t = +totalPoints || 0;
+    return t < LEVEL_CEILING[n];
+  }
+
+  // the lowest level still open to that player
+  function lowestPlayableLevel(totalPoints) {
+    for (var n = 1; n <= 5; n++) {
+      if (levelPlayable(n, totalPoints)) return n;
+    }
+    return 5;
+  }
+
   var Scoring = {
     levelMultiplier: levelMultiplier,
     finalScore: finalScore,
     timeBonus: timeBonus,
     computerGetsBonus: computerGetsBonus,
+    levelPlayable: levelPlayable,
+    lowestPlayableLevel: lowestPlayableLevel,
     LEVEL_MULTIPLIER: LEVEL_MULTIPLIER,
-    TIME_BONUS: TIME_BONUS
+    TIME_BONUS: TIME_BONUS,
+    LEVEL_CEILING: LEVEL_CEILING
   };
 
   var Chess = { Game: Game, AI: AI, perft: perft, generateMoves: generateMoves, Scoring: Scoring };
