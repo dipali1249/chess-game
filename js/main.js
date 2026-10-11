@@ -14,8 +14,10 @@
   const evalFillEl = $('eval-fill');
   const evalTextEl = $('eval-text');
   const gamePointsEl = $('game-points');
+  const totalPointsEl = $('total-points');
   const scoreMultEl = $('score-mult');
   const gameoverScoreEl = $('gameover-score');
+  const diffNoteEl = $('diff-note');
   const capturedTopEl = $('captured-top');
   const capturedBottomEl = $('captured-bottom');
   const clockTopEl = $('clock-top');
@@ -64,6 +66,8 @@
   let over = null;              // {over, result, reason}
   let gamePoints = 0;           // accumulated position points for this game
   let pointsHistory = [];       // one contribution per played ply (rolled back on undo)
+  let totalPoints = 0;          // running total across games (gates the levels)
+  let gameSettled = false;      // this game's score has been added to the running total
   let soundOn = true;
   let thinking = false;
   let hint = null;
@@ -262,6 +266,9 @@
     gamePointsEl.textContent = fmtPts(gamePoints);
     gamePointsEl.classList.toggle('pos', gamePoints > 0.049);
     gamePointsEl.classList.toggle('neg', gamePoints < -0.049);
+    totalPointsEl.textContent = fmtPts(totalPoints);
+    totalPointsEl.classList.toggle('pos', totalPoints > 0.049);
+    totalPointsEl.classList.toggle('neg', totalPoints < -0.049);
     scoreMultEl.textContent = 'Win \u00d7' + m + ' \u00b7 Loss \u00f7' + m + ' \u00b7 Draw \u00d71';
   }
 
@@ -581,6 +588,12 @@
     const m = C.Scoring.levelMultiplier(difficulty);
     const outcome = over.result === 0 ? 0 : (over.result === playerColor ? 1 : -1);
     const final = C.Scoring.finalScore(gamePoints, outcome, difficulty);
+    if (!gameSettled) {                 // bank this game's score once
+      gameSettled = true;
+      totalPoints += final;
+      saveProgress();
+      updateScoreUI();
+    }
     const how = outcome > 0
       ? 'accumulated ' + fmtPts(gamePoints) + ' \u00d7' + m + ' for the win'
       : outcome < 0
@@ -627,6 +640,7 @@
     flipped = playerColor === -1;
     gamePoints = 0;
     pointsHistory = [];
+    gameSettled = false;
     gameoverScoreEl.innerHTML = '';
     buildBoard();
     updateStrips();
@@ -678,15 +692,19 @@
         solvedIds = p.solvedIds || {};
         currentIndex = p.currentIndex || 0;
         difficulty = p.difficulty || 3;
+        totalPoints = p.totalPoints || 0;
       }
     } catch (e) { /* storage unavailable */ }
+    if (!C.Scoring.levelPlayable(difficulty, totalPoints)) {
+      difficulty = C.Scoring.lowestPlayableLevel(totalPoints);
+    }
   }
 
   function saveProgress() {
     try {
       window.localStorage.setItem('royalchess.progress', JSON.stringify({
         hintCredits: hintCredits, solvedIds: solvedIds, currentIndex: currentIndex,
-        difficulty: difficulty
+        difficulty: difficulty, totalPoints: totalPoints
       }));
     } catch (e) { /* ignore */ }
   }
@@ -705,9 +723,20 @@
   }
 
   function markDifficultyButtons() {
+    const lowest = C.Scoring.lowestPlayableLevel(totalPoints);
+    if (!C.Scoring.levelPlayable(difficulty, totalPoints)) difficulty = lowest;
     segDiff.querySelectorAll('button').forEach((b) => {
-      b.classList.toggle('active', +b.dataset.value === difficulty);
+      const lvl = +b.dataset.value;
+      const open = C.Scoring.levelPlayable(lvl, totalPoints);
+      b.disabled = !open;
+      b.title = open ? '' : 'Closed \u2014 your total points have passed this level';
+      b.classList.toggle('active', open && lvl === difficulty);
     });
+    if (diffNoteEl) {
+      diffNoteEl.textContent = 'Total points ' + fmtPts(totalPoints) +
+        (lowest > 1 ? ' \u2014 levels 1\u2013' + (lowest - 1) + ' are closed' : '') +
+        '. Levels close at 100 / 300 / 1000 / 3000.';
+    }
   }
 
   function updateHintUI() {
@@ -1097,7 +1126,7 @@
     [segColor, segDiff].forEach((seg) => {
       seg.addEventListener('click', (e) => {
         const b = e.target.closest('button');
-        if (!b) return;
+        if (!b || b.disabled) return;      // closed levels can't be picked
         seg.querySelectorAll('button').forEach((x) => x.classList.remove('active'));
         b.classList.add('active');
       });
@@ -1107,6 +1136,7 @@
       let color = segValue(segColor);
       if (color === 'r') color = Math.random() < 0.5 ? 'w' : 'b';
       difficulty = +segValue(segDiff);
+      if (!C.Scoring.levelPlayable(difficulty, totalPoints)) difficulty = C.Scoring.lowestPlayableLevel(totalPoints);
       saveProgress();
       closeModal(newgameModal);
       closeModal(gameoverModal);
