@@ -24,6 +24,11 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Piece-square-table evaluation with tapered king tables and bishop-pair bonus
 - **Five difficulty levels** — Beginner, Casual, Club, Strong, Expert — chosen in the New Game dialog before the game starts
 
+### Level gating by total points
+- Every settled game score is added to a running **total points** figure (shown on the panel, kept in the browser)
+- A level closes once your total reaches its ceiling: **Level 1 at 100, Level 2 at 300, Level 3 at 1000, Level 4 at 3000** — Level 5 never closes, so a rising total pushes you up the levels
+- Closed levels are struck through and disabled in the New Game dialog, with a note explaining why; a saved difficulty that has since closed is moved up to the lowest level still open
+
 ### Puzzle training (earn your hints)
 - **Every puzzle comes from the connected knowledge base** (Martin Gardner's chess chapter) — nothing is generated locally
 - No levels: one flat set, worked through in order
