@@ -1,6 +1,7 @@
 /* Puzzle set tests: run with `node tests/puzzles.test.js`
-   Every puzzle ships from the connected knowledge base (Martin Gardner's chess
-   chapter); this re-checks the structure and every board puzzle. */
+   Every puzzle is a real position with a solution line — two from the connected
+   knowledge base (Martin Gardner's chess chapter) and five from Chess.com's daily
+   puzzle feed. This re-checks the structure and plays every line. */
 'use strict';
 
 const assert = require('assert');
@@ -30,7 +31,7 @@ assert.ok(PUZZLES.length > 0, 'the puzzle set is not empty');
 const ids = new Set();
 for (const p of PUZZLES) {
   assert.ok(p.id && p.theme, 'puzzle has an id and a theme');
-  assert.ok(p.source, p.id + ' must cite its knowledge-base source');
+  assert.ok(p.source, p.id + ' must cite its source');
   assert.ok(p.kind === 'line' || p.kind === 'question', p.id + ' has a known kind');
   assert.ok(!ids.has(p.id), 'duplicate puzzle id ' + p.id);
   ids.add(p.id);
@@ -47,7 +48,7 @@ for (const p of PUZZLES) {
 }
 // the set must not look like the old generated levels
 assert.ok(!PUZZLES.some((p) => p.level !== undefined), 'no level fields remain');
-console.log('structure OK: ' + PUZZLES.length + ' knowledge-base puzzles, no levels');
+console.log('structure OK: ' + PUZZLES.length + ' puzzles (no levels, no multiple choice)');
 
 // ---- every position is legal, and every line plays out ----
 let checked = 0;
