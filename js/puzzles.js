@@ -1,13 +1,12 @@
 /* Royal Chess — built-in puzzle set.
-   Every puzzle here comes from the connected knowledge base: Martin Gardner's
-   chess chapter (the "Puzzle" collection). Nothing is generated locally.
-   tests/puzzles.test.js re-checks the board puzzles on every run.
+   Two classics from the connected knowledge base (Martin Gardner's chess chapter)
+   plus five daily puzzles taken from Chess.com's public puzzle feed. Every puzzle
+   is a real position with a solution line — nothing is generated locally.
+   tests/puzzles.test.js re-checks every line on each run.
 
    kind:     "line"     — play the solution on the board.
-             "question" — a multiple-choice question about the book's problem.
-   player:   for "line" puzzles, the colour the solver plays.
-   line:     the reference solution in SAN (the trainer accepts the book's line).
-   choices / answer: the options and the index of the correct one. */
+   player:   the colour the solver plays.
+   line:     the reference solution in SAN (the trainer accepts the book's line). */
 (function (global) {
   'use strict';
 
@@ -34,56 +33,56 @@
       "line": ["f3", "e5", "Kf2", "Qf6", "Kg3", "Qxf3+", "Kh4", "Be7#"]
     },
     {
-      "id": "G3",
-      "theme": "Avoiding Checks",
-      "source": "Martin Gardner, chess chapter \u2014 Problem 12.1",
-      "kind": "question",
-      "fen": "7n/8/8/8/8/8/8/K7 b - - 0 1",
-      "question": "A lone knight (to move) chases your king, which sits in the corner. For how long can the king avoid being checked?",
-      "choices": ["Forever", "About 6 moves", "About 12 moves", "It is checked at once"],
-      "answer": 0,
-      "explain": "Forever \u2014 head for the centre and always keep your king on the opposite colour to the knight. A knight changes colour on every move, so it can never check you. Only a corner can trap you."
+      "id": "C1",
+      "theme": "Showtime!",
+      "source": "Chess.com daily puzzle \u2014 2025-09-26",
+      "kind": "line",
+      "fen": "1n3rk1/3pQ1pb/2p4p/4N2r/1R1Bq2P/8/5PP1/6K1 w - - 0 1",
+      "player": "w",
+      "endsInMate": true,
+      "note": "White to play \u2014 a forcing sequence that finishes with mate.",
+      "line": ["Qxf8+", "Kxf8", "Bc5+", "d6", "Bxd6+", "Ke8", "Rxb8#"]
     },
     {
-      "id": "G4",
-      "theme": "Twenty-Five Knights",
-      "source": "Martin Gardner, chess chapter \u2014 Problem 12.4",
-      "kind": "question",
-      "question": "Every square of a 5\u00d75 board holds a knight. Can all 25 knights jump at once so that every square is still occupied?",
-      "choices": ["Yes \u2014 it always works", "No \u2014 it is impossible", "Only if the corner knights stay put"],
-      "answer": 1,
-      "explain": "Impossible. A knight always lands on the opposite colour, but a 5\u00d75 board has 13 squares of one colour and only 12 of the other \u2014 so 13 knights cannot land on 12 squares."
+      "id": "C2",
+      "theme": "Where Did Everybody Go?",
+      "source": "Chess.com daily puzzle \u2014 2026-09-01",
+      "kind": "line",
+      "fen": "rnb1k2r/ppp2pp1/3qp2p/8/1b1P4/2B3P1/PP2PPBP/R2QK1NR w KQkq - 0 1",
+      "player": "w",
+      "note": "White to play \u2014 a forcing sequence of trades that wins a piece.",
+      "line": ["Qa4+", "Nc6", "Bxc6+", "Qxc6", "Qxc6+", "bxc6", "Bxb4"]
     },
     {
-      "id": "G5",
-      "theme": "Maximising Moves",
-      "source": "Martin Gardner, chess chapter \u2014 Problem 12.7",
-      "kind": "question",
-      "question": "Placed freely on an empty board, what is the greatest number of moves the eight pieces of one colour (no pawns) can have between them?",
-      "choices": ["51", "74", "100", "128"],
-      "answer": 2,
-      "explain": "100. The Bezzel position gives exactly 100 moves, and E. Landau proved in 1899 that 100 is the maximum."
+      "id": "C3",
+      "theme": "White Wins",
+      "source": "Chess.com daily puzzle \u2014 2014-04-11",
+      "kind": "line",
+      "fen": "4r1k1/pb2r1pp/1ppq1p2/4N3/3PRP2/2P3P1/PPQ4P/4R1K1 w - - 0 1",
+      "player": "w",
+      "note": "White to play \u2014 a queen sacrifice opens the door.",
+      "line": ["Qb3+", "Kf8", "Qf7+", "Rxf7", "Ng6+", "Kg8", "Rxe8+"]
     },
     {
-      "id": "G6",
-      "theme": "Starting a Chess Game",
-      "source": "Martin Gardner, chess chapter \u2014 Problem 12.9",
-      "kind": "question",
-      "question": "All 32 pieces are on the board, one per square; moving a piece to any empty square counts as one move. What is the largest number of moves that can ever be needed to reach the proper starting position?",
-      "choices": ["33", "36", "40", "48"],
-      "answer": 1,
-      "explain": "36 moves \u2014 or 37 if Black must finish at the bottom with the queens on their own colours."
+      "id": "C4",
+      "theme": "Mate in 1",
+      "source": "Chess.com daily puzzle \u2014 2012-05-06",
+      "kind": "line",
+      "fen": "r1bqkb1r/ppp2ppp/3p4/3Bp3/3nP3/5Q2/PPPP1PPP/R1B1K1NR w KQkq - 0 1",
+      "player": "w",
+      "endsInMate": true,
+      "note": "White to play \u2014 mate in one.",
+      "line": ["Qxf7#"]
     },
     {
-      "id": "G7",
-      "theme": "Indian Chess Mystery",
-      "source": "Martin Gardner, chess chapter \u2014 Problem 12.10",
-      "kind": "question",
-      "fen": "r1b1k2r/pppppppp/8/2N3N1/5n2/2n5/PPPPPPPP/1RBK1B1R w - - 0 1",
-      "question": "The light pieces are in check. From the position alone, which side made the first move?",
-      "choices": ["The light pieces", "The dark pieces"],
-      "answer": 1,
-      "explain": "The dark pieces. Smullyan's parity argument: the total number of moves made is odd, so the side that moved last (the light pieces, now in check) did not move first."
+      "id": "C5",
+      "theme": "Order of Capture",
+      "source": "Chess.com daily puzzle \u2014 2010-03-16",
+      "kind": "line",
+      "fen": "2r2rk1/Bpnbppbp/2np2p1/3N4/2P1P3/1P4PP/P1N2PB1/3RR1K1 b - - 0 1",
+      "player": "b",
+      "note": "Black to play \u2014 the captures only work in one order.",
+      "line": ["Nxd5", "exd5", "Nxa7"]
     }
   ];
 
