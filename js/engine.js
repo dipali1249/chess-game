@@ -745,7 +745,7 @@
   // ---- level gating by total game points ----
   // A level stays open while the player's running total is under its ceiling. Once the
   // total reaches the ceiling the level is closed and the player must move up a level.
-  var LEVEL_CEILING = [0, 100, 300, 1000, 3000, Infinity];
+  var LEVEL_CEILING = [0, 5000, 10000, 30000, 50000, Infinity];
 
   // is `level` still open to a player with `totalPoints`?
   function levelPlayable(level, totalPoints) {
