@@ -26,7 +26,7 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 
 ### Level gating by total points
 - Every settled game score is added to a running **total points** figure (shown on the panel, kept in the browser)
-- A level closes once your total reaches its ceiling: **Level 1 at 100, Level 2 at 300, Level 3 at 1000, Level 4 at 3000** — Level 5 never closes, so a rising total pushes you up the levels
+- A level closes once your total reaches its ceiling: **Level 1 at 5000, Level 2 at 10000, Level 3 at 30000, Level 4 at 50000** — Level 5 never closes, so a rising total pushes you up the levels
 - Closed levels are struck through and disabled in the New Game dialog, with a note explaining why; a saved difficulty that has since closed is moved up to the lowest level still open
 
 ### Puzzle training (earn your hints)
