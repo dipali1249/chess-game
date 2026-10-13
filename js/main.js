@@ -745,7 +745,7 @@
     if (diffNoteEl) {
       diffNoteEl.textContent = 'Total points ' + fmtPts(totalPoints) +
         (lowest > 1 ? ' \u2014 levels 1\u2013' + (lowest - 1) + ' are closed' : '') +
-        '. Levels close at 100 / 300 / 1000 / 3000.';
+        '. Levels close at 5000 / 10000 / 30000 / 50000.';
     }
   }
 
