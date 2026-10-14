@@ -726,47 +726,10 @@ footer {
   75% { transform: translateX(6px); }
 }
 
-/* ---------- ad slots ---------- */
-/* Dashed frames mark where an ad will fill. They stay quiet while the slot is empty,
-   so an unfilled unit reads as a reserved space rather than a broken one. */
-.ad-slot {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 12px 12px;
-  border: 1px dashed var(--panel-border);
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-}
-.ad-tag {
-  align-self: flex-start;
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  opacity: 0.7;
-}
-.ad-slot .adsbygoogle { display: block; width: 100%; }
-
-/* slot 1 — full-width banner above the board */
-.ad-slot-header {
-  width: 100%;
-  margin-bottom: 16px;
-}
-.ad-slot-header .adsbygoogle { min-height: 90px; }
-
-/* slot 2 — the side panel rectangle */
-.ad-slot-panel .adsbygoogle { min-height: 250px; }
-
 /* ---------- responsive ---------- */
 @media (max-width: 920px) {
   main { flex-direction: column; align-items: center; }
   .panel { width: min(92vw, 560px); flex: none; }
   .player-strip, .board-frame { width: 100%; }
   .board { width: 100%; }
-  .ad-slot-header .adsbygoogle { min-height: 60px; }
 }
