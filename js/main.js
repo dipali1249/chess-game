@@ -1,4 +1,4 @@
-/* ============ Royal Chess — UI & game flow ============ */
+/* ============ Learners Chess — UI & game flow ============ */
 (function () {
   'use strict';
 
@@ -9,11 +9,9 @@
   const CAP_ORDER = [5, 4, 3, 2, 1];        // captured material, highest value first
   const PIECE_WORD = { 1: 'pawn', 2: 'knight', 3: 'bishop', 4: 'rook', 5: 'queen' };
 
-  // ---- account storage keys (everything lives in this browser) ----
-  const ACCOUNTS_KEY = 'royalchess.accounts';
-  const ACTIVE_KEY = 'royalchess.active';
-  const GUEST_KEY = 'royalchess.progress';
-  const MAX_ROWS = 10;
+  // ---- progress storage (saved in this browser) ----
+  const PROGRESS_KEY = 'learnerschess.progress';
+  const LEGACY_PROGRESS_KEY = 'royalchess.progress';   // carried over once, from before the rename
 
   const $ = (id) => document.getElementById(id);
   const boardEl = $('board');
@@ -65,15 +63,6 @@
   const btnPuzzles = $('btn-puzzles');
   const hintCreditsEl = $('hint-credits');
   const puzzlePanelProgress = $('puzzle-panel-progress');
-  const accountNameEl = $('account-name');
-  const btnAccount = $('btn-account');
-  const btnLeaderboard = $('btn-leaderboard');
-  const loginModal = $('login-modal');
-  const loginNameEl = $('login-name');
-  const loginPinEl = $('login-pin');
-  const loginErrorEl = $('login-error');
-  const leaderboardModal = $('leaderboard-modal');
-  const leaderboardEl = $('leaderboard');
 
   // ---------- state ----------
   let game = new C.Game();
@@ -96,11 +85,6 @@
   let pendingPromo = null;
   let audioCtx = null;
   let mateKey = null, mateVal = 0;   // cached per position: mateIn is a real search
-
-  // ---- accounts (browser-local profiles) ----
-  let accounts = {};                 // { name: { pin: <hash>, progress: {...} } }
-  let accountName = null;            // null = playing as guest
-  let gamesPlayed = 0;
 
   // ---- puzzle trainer state ----
   const PUZZLES = window.CHESS_PUZZLES || [];
@@ -125,17 +109,24 @@
   init();
 
   function init() {
-    accounts = readAccounts();
-    try { accountName = window.localStorage.getItem(ACTIVE_KEY) || null; } catch (e) { accountName = null; }
-    if (accountName && !accounts[accountName]) accountName = null;   // stale sign-in
+    migrateProgress();
     buildBoard();
     bindEvents();
     loadProgress();
     markDifficultyButtons();
     updateHintUI();
-    updateAccountUI();
     openModal(newgameModal);
     newGame(1, difficulty);
+  }
+
+  // progress saved under the old key carries over once, so the rename loses nothing
+  function migrateProgress() {
+    try {
+      const old = window.localStorage.getItem(LEGACY_PROGRESS_KEY);
+      if (old && !window.localStorage.getItem(PROGRESS_KEY)) {
+        window.localStorage.setItem(PROGRESS_KEY, old);
+      }
+    } catch (e) { /* ignore */ }
   }
 
   // ---------- board construction ----------
@@ -690,7 +681,6 @@
     if (!gameSettled) {                 // bank this game's score once
       gameSettled = true;
       totalPoints += final;
-      gamesPlayed++;
       saveProgress();
       updateScoreUI();
     }
@@ -784,140 +774,31 @@
   }
 
   // ===================== puzzle trainer =====================
-  // ---------- accounts (browser-local profiles) ----------
-  // Everything here lives in this browser. The passcode is hashed so it is not kept
-  // as plain text, but this is a local profile — not real authentication.
-  function pinHash(name, pin) {
-    let h = 2166136261;
-    const s = String(name).toLowerCase() + '\u0000' + String(pin);
-    for (let i = 0; i < s.length; i++) {
-      h ^= s.charCodeAt(i);
-      h = Math.imul(h, 16777619);
-    }
-    return (h >>> 0).toString(36);
-  }
-
-  function readAccounts() {
-    try { return JSON.parse(window.localStorage.getItem(ACCOUNTS_KEY)) || {}; }
-    catch (e) { return {}; }
-  }
-
-  function writeAccounts() {
-    try { window.localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts)); }
-    catch (e) { /* ignore */ }
-  }
-
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, (c) =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  }
-
-  function cleanName(raw) {
-    const n = String(raw || '').trim().replace(/\s+/g, ' ');
-    if (n.length < 2 || n.length > 14) return '';
-    return /^[A-Za-z0-9 ._-]+$/.test(n) ? n : '';
-  }
-
-  // the profile of whoever is playing: an account's, or the guest's
-  function profileData() {
-    if (accountName && accounts[accountName]) return accounts[accountName].progress || {};
-    try { return JSON.parse(window.localStorage.getItem(GUEST_KEY)) || {}; }
-    catch (e) { return {}; }
-  }
-
+  // ---------- progress (saved in this browser) ----------
   function loadProgress() {
-    const p = profileData();
-    hintCredits = p.hintCredits || 0;
-    solvedIds = p.solvedIds || {};
-    currentIndex = p.currentIndex || 0;
-    difficulty = p.difficulty || 3;
-    totalPoints = p.totalPoints || 0;
-    gamesPlayed = p.games || 0;
+    try {
+      const raw = window.localStorage.getItem(PROGRESS_KEY);
+      if (raw) {
+        const p = JSON.parse(raw);
+        hintCredits = p.hintCredits || 0;
+        solvedIds = p.solvedIds || {};
+        currentIndex = p.currentIndex || 0;
+        difficulty = p.difficulty || 3;
+        totalPoints = p.totalPoints || 0;
+      }
+    } catch (e) { /* storage unavailable */ }
     if (!C.Scoring.levelPlayable(difficulty, totalPoints)) {
       difficulty = C.Scoring.lowestPlayableLevel(totalPoints);
     }
   }
 
   function saveProgress() {
-    const p = {
-      hintCredits: hintCredits, solvedIds: solvedIds, currentIndex: currentIndex,
-      difficulty: difficulty, totalPoints: totalPoints, games: gamesPlayed
-    };
     try {
-      if (accountName && accounts[accountName]) {
-        accounts[accountName].progress = p;
-        writeAccounts();
-      } else {
-        window.localStorage.setItem(GUEST_KEY, JSON.stringify(p));
-      }
+      window.localStorage.setItem(PROGRESS_KEY, JSON.stringify({
+        hintCredits: hintCredits, solvedIds: solvedIds, currentIndex: currentIndex,
+        difficulty: difficulty, totalPoints: totalPoints
+      }));
     } catch (e) { /* ignore */ }
-  }
-
-  function updateAccountUI() {
-    accountNameEl.textContent = accountName || 'Guest';
-    btnAccount.textContent = accountName ? 'Log out' : 'Log in';
-    btnAccount.classList.toggle('primary', !accountName);
-  }
-
-  function signIn(name) {
-    accountName = name;
-    try { window.localStorage.setItem(ACTIVE_KEY, name); } catch (e) { /* ignore */ }
-    closeModal(gameoverModal);
-    loadProgress();
-    markDifficultyButtons();
-    updateHintUI();
-    updateAccountUI();
-    newGame(1, difficulty);          // a fresh match for the profile that just signed in
-  }
-
-  function signOut() {
-    accountName = null;
-    try { window.localStorage.removeItem(ACTIVE_KEY); } catch (e) { /* ignore */ }
-    closeModal(gameoverModal);
-    loadProgress();
-    markDifficultyButtons();
-    updateHintUI();
-    updateAccountUI();
-    newGame(1, difficulty);
-  }
-
-  function openLogin() {
-    loginErrorEl.textContent = '';
-    loginNameEl.value = accountName || '';
-    loginPinEl.value = '';
-    openModal(loginModal);
-    loginNameEl.focus();
-  }
-
-  // ---- leaderboard ----
-  function leaderboardRows() {
-    const rows = Object.keys(accounts).map((n) => {
-      const p = accounts[n].progress || {};
-      return { name: n, points: p.totalPoints || 0, games: p.games || 0 };
-    });
-    if (!accountName) {
-      rows.push({ name: 'Guest (this browser)', points: totalPoints, games: gamesPlayed, guest: true });
-    }
-    rows.sort((a, b) => (b.points - a.points) || a.name.localeCompare(b.name));
-    return rows.slice(0, MAX_ROWS);
-  }
-
-  function renderLeaderboard() {
-    const rows = leaderboardRows();
-    if (!rows.length) {
-      leaderboardEl.innerHTML = '<div class="lb-empty">No players yet \u2014 create an account to get on the board.</div>';
-      return;
-    }
-    leaderboardEl.innerHTML = rows.map((r, i) => {
-      const mine = r.guest ? !accountName : r.name === accountName;
-      const cls = 'lb-points' + (r.points > 0.049 ? ' pos' : (r.points < -0.049 ? ' neg' : ''));
-      const games = r.games + (r.games === 1 ? ' game' : ' games');
-      return '<div class="lb-row' + (mine ? ' me' : '') + '">' +
-        '<span class="lb-rank">' + (i + 1) + '</span>' +
-        '<span class="lb-name">' + escapeHtml(r.name) + '<small>' + games + '</small></span>' +
-        '<span class="' + cls + '">' + fmtPts(r.points) + '</span>' +
-        '</div>';
-    }).join('');
   }
 
   // every match ends with a fresh puzzle slate, so the whole set can be worked again
@@ -1479,45 +1360,6 @@
         loadPuzzle(idx);
       });
     }
-    btnAccount.addEventListener('click', () => {
-      if (accountName) { signOut(); return; }
-      openLogin();
-    });
-    btnLeaderboard.addEventListener('click', () => {
-      renderLeaderboard();
-      openModal(leaderboardModal);
-    });
-    $('btn-close-leaderboard').addEventListener('click', () => closeModal(leaderboardModal));
-    $('btn-cancel-login').addEventListener('click', () => closeModal(loginModal));
-    $('btn-guest').addEventListener('click', () => {
-      closeModal(loginModal);
-      if (accountName) signOut();
-    });
-
-    $('btn-login').addEventListener('click', () => {
-      const name = cleanName(loginNameEl.value);
-      const pin = loginPinEl.value;
-      if (!name) { loginErrorEl.textContent = 'Enter a player name (2-14 letters, digits or spaces).'; return; }
-      if (pin.length < 4) { loginErrorEl.textContent = 'The passcode needs at least 4 characters.'; return; }
-      const acc = accounts[name];
-      if (!acc) { loginErrorEl.textContent = 'No account called "' + name + '". Create one instead.'; return; }
-      if (acc.pin !== pinHash(name, pin)) { loginErrorEl.textContent = 'That passcode does not match.'; return; }
-      closeModal(loginModal);
-      signIn(name);
-    });
-
-    $('btn-create').addEventListener('click', () => {
-      const name = cleanName(loginNameEl.value);
-      const pin = loginPinEl.value;
-      if (!name) { loginErrorEl.textContent = 'Enter a player name (2-14 letters, digits or spaces).'; return; }
-      if (pin.length < 4) { loginErrorEl.textContent = 'The passcode needs at least 4 characters.'; return; }
-      if (accounts[name]) { loginErrorEl.textContent = '"' + name + '" is already taken \u2014 log in instead.'; return; }
-      accounts[name] = { pin: pinHash(name, pin), progress: {} };
-      writeAccounts();
-      closeModal(loginModal);
-      signIn(name);
-    });
-
     btnPuzzles.addEventListener('click', openPuzzles);
     btnPuzzleClose.addEventListener('click', () => closeModal(puzzleModal));
     btnPuzzleReset.addEventListener('click', () => {
