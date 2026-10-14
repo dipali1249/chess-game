@@ -45,7 +45,8 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 ### Interface
 - Drag-and-drop **and** tap/click-to-move (works on touch)
 - Legal-move dots, capture rings, last-move and check highlights
-- Live evaluation bar (from your side), plus a **captured-material strip** under each player: the pieces that side has taken, grouped by piece with a count when there is more than one, highest value first, a green **+n** badge on whoever is ahead on material, and a hover tooltip spelling out the tally and its point value
+- **Live evaluation bar:** a white fill for White's share of the position on a dark track for Black's, with a tick at the halfway mark; the number and a plain-English verdict ("You are better", "Engine is winning", "Level") are read from your side, a forced mate shows as **#3** and pegs the bar, and once the game ends it settles to **1-0** / **0-1** / **½**
+- A **captured-material strip** under each player: the pieces that side has taken, grouped by piece with a count when there is more than one, highest value first, a green **+n** badge on whoever is ahead on material, and a hover tooltip spelling out the tally and its point value
 - Move list in SAN with auto-scroll
 - 10-minute clocks per side with time-forfeit detection, plus level-based time bonuses (see below)
 - Undo (takes back both your move and the engine's reply)
