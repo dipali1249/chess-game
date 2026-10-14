@@ -95,6 +95,7 @@
   let puzzlePlayer = 1;        // the colour the solver plays in the current puzzle
   let puzzleFlipped = false;   // show the puzzle from the solver's side
   let puzzleLineIdx = 0;       // position in the stored line (goal 'line')
+  let puzzleLevelSel = 1;      // which puzzle level the trainer is showing
 
   init();
 
@@ -723,11 +724,53 @@
     return PUZZLES.filter((p) => solvedIds[p.id]).length;
   }
 
-  // index of the next unsolved puzzle, searching forward from `start`
+  // ---- puzzle levels: which level this match has unlocked ----
+  // Level 1 is always open; level 2 unlocks once the queens are exchanged, level 3
+  // when the player is two pawns down, level 4 while the player's king is in check.
+  // When several are open the highest one is used first.
+  function availablePuzzleLevels() {
+    return C.Scoring.puzzleLevelsAvailable(game.state, playerColor);
+  }
+
+  function puzzlesAtLevel(n) {
+    return PUZZLES.filter((p) => p.level === n);
+  }
+
+  function lockReason(n) {
+    if (n === 2) return 'level 2 unlocks when the queens are exchanged';
+    if (n === 3) return 'level 3 unlocks when you are two pawns down';
+    if (n === 4) return 'level 4 unlocks while your king is in check';
+    return 'locked';
+  }
+
+  function markPuzzleLevelButtons() {
+    const open = availablePuzzleLevels();
+    if (open.indexOf(puzzleLevelSel) < 0) puzzleLevelSel = open[open.length - 1];
+    const seg = $('seg-plevel');
+    if (seg) {
+      seg.querySelectorAll('button').forEach((b) => {
+        const lvl = +b.dataset.value;
+        const on = open.indexOf(lvl) >= 0;
+        b.disabled = !on;
+        b.title = on ? '' : 'Locked \u2014 ' + lockReason(lvl);
+        b.classList.toggle('active', on && lvl === puzzleLevelSel);
+      });
+    }
+    const note = $('plevel-note');
+    if (note) {
+      note.textContent = 'Open in this match: ' + open.map((n) => 'level ' + n).join(', ') +
+        '. The highest open level is used first \u2014 ' + lockReason(2) + ', ' + lockReason(3) +
+        ', ' + lockReason(4) + '.';
+    }
+  }
+
+  // index (within the current level) of the next unsolved puzzle, searching forward
   function firstUnsolvedFrom(start) {
-    for (let i = 0; i < PUZZLES.length; i++) {
-      const idx = ((start + i) % PUZZLES.length + PUZZLES.length) % PUZZLES.length;
-      if (!solvedIds[PUZZLES[idx].id]) return idx;
+    const list = puzzlesAtLevel(puzzleLevelSel);
+    if (!list.length) return -1;
+    for (let i = 0; i < list.length; i++) {
+      const idx = ((start + i) % list.length + list.length) % list.length;
+      if (!solvedIds[list[idx].id]) return idx;
     }
     return -1;
   }
@@ -843,7 +886,12 @@
     closeModal(gameoverModal);
     openModal(puzzleModal);
     resizePuzzleBoard();
-    const idx = firstUnsolvedFrom(currentIndex);
+    // several levels can be open at once: prefer the highest
+    const openLevels = availablePuzzleLevels();
+    puzzleLevelSel = openLevels[openLevels.length - 1];
+    markPuzzleLevelButtons();
+    currentIndex = 0;
+    const idx = firstUnsolvedFrom(0);
     if (idx < 0) { showAllSolved(); return; }
     loadPuzzle(idx);
   }
@@ -883,22 +931,24 @@
   }
 
   function showAllSolved() {
+    const list = puzzlesAtLevel(puzzleLevelSel);
     currentPuzzle = null;
     puzzleGame = null;
     puzzlePhase = 'done';
     puzzleAnswersEl.innerHTML = '';
     puzzleBoardEl.innerHTML = '';
-    puzzleLevelLabel.textContent = 'All done';
-    puzzleThemeEl.textContent = 'Every puzzle in the set has been solved.';
-    puzzleStatus('All ' + PUZZLES.length + ' puzzles solved \u2014 well played!', 'solved');
-    puzzleProgressText.textContent = 'Complete';
+    puzzleLevelLabel.textContent = 'Level ' + puzzleLevelSel + ' complete';
+    puzzleThemeEl.textContent = 'Every level ' + puzzleLevelSel + ' puzzle has been solved this match.';
+    puzzleStatus('All ' + list.length + ' level ' + puzzleLevelSel + ' puzzles solved \u2014 well played!', 'solved');
+    puzzleProgressText.textContent = 'Level ' + puzzleLevelSel + ' complete';
     puzzleProgressFill.style.width = '100%';
     btnPuzzleNext.disabled = true;
   }
 
   function loadPuzzle(index) {
-    if (index < 0 || index >= PUZZLES.length) return;
-    const p = PUZZLES[index];
+    const list = puzzlesAtLevel(puzzleLevelSel);
+    if (index < 0 || index >= list.length) return;
+    const p = list[index];
     const solved = !!solvedIds[p.id];
     currentIndex = index;
     currentPuzzle = p;
@@ -914,11 +964,11 @@
     puzzlePlayer = p.player === 'b' ? -1 : (p.player === 'w' ? 1 : (puzzleGame ? puzzleGame.state.turn : 1));
     puzzleFlipped = puzzlePlayer === -1;
     const side = puzzlePlayer === 1 ? 'White' : 'Black';
-    puzzleLevelLabel.textContent = p.source || 'Puzzle';
+    puzzleLevelLabel.textContent = 'Level ' + p.level + ' \u2014 ' + (p.source || 'Puzzle');
     puzzleThemeEl.textContent = p.theme + (p.note ? ' \u2014 ' + p.note : '') +
       (p.kind === 'question' ? ' ' + p.question : '');
-    puzzleProgressText.textContent = 'Puzzle ' + (index + 1) + ' of ' + PUZZLES.length;
-    puzzleProgressFill.style.width = (solvedCount() / PUZZLES.length * 100) + '%';
+    puzzleProgressText.textContent = 'Level ' + puzzleLevelSel + ' \u2014 puzzle ' + (index + 1) + ' of ' + list.length;
+    puzzleProgressFill.style.width = (list.filter((q) => solvedIds[q.id]).length / list.length * 100) + '%';
     btnPuzzleNext.disabled = false;
     buildPuzzleBoard();
     renderPuzzleAnswers();
@@ -1207,6 +1257,19 @@
       clearSelection();
     });
 
+    const segPlevel = $('seg-plevel');
+    if (segPlevel) {
+      segPlevel.addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (!b || b.disabled) return;      // locked levels can't be picked
+        puzzleLevelSel = +b.dataset.value;
+        markPuzzleLevelButtons();
+        currentIndex = 0;
+        const idx = firstUnsolvedFrom(0);
+        if (idx < 0) { showAllSolved(); return; }
+        loadPuzzle(idx);
+      });
+    }
     btnPuzzles.addEventListener('click', openPuzzles);
     btnPuzzleClose.addEventListener('click', () => closeModal(puzzleModal));
     btnPuzzleReset.addEventListener('click', () => {
