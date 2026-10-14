@@ -112,11 +112,26 @@
     migrateProgress();
     buildBoard();
     bindEvents();
+    initAds();
     loadProgress();
     markDifficultyButtons();
     updateHintUI();
     openModal(newgameModal);
     newGame(1, difficulty);
+  }
+
+  // ---------- ads ----------
+  // AdSense fills each <ins class="adsbygoogle"> once it has been pushed. The push
+  // happens whether or not the AdSense script has loaded yet — the script drains the
+  // queue when it arrives. With the placeholder client id in index.html nothing
+  // renders, so the game behaves exactly the same with or without ads.
+  function initAds() {
+    const units = document.querySelectorAll('ins.adsbygoogle');
+    if (!units.length) return;
+    for (let i = 0; i < units.length; i++) {
+      try { (window.adsbygoogle = window.adsbygoogle || []).push({}); }
+      catch (e) { /* already pushed, or the network refused the unit */ }
+    }
   }
 
   // progress saved under the old key carries over once, so the rename loses nothing
