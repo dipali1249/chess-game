@@ -762,6 +762,38 @@
     return 5;
   }
 
+  // ---- puzzle levels ----
+  // Which puzzle levels the match has unlocked. Level 1 is the base level and is
+  // always open; level 2 unlocks once the queens are exchanged (both gone), level 3
+  // when the player is two pawns down (or worse) in material, and level 4 while the
+  // player's king is in check. When several are open the highest one wins.
+  var PIECE_POINTS = [0, 1, 3, 3, 5, 9, 0];
+
+  function puzzleLevelsAvailable(state, playerColor) {
+    var me = playerColor > 0 ? 1 : -1;
+    var open = [1];
+    var whiteQueen = 0, blackQueen = 0, myMaterial = 0, theirMaterial = 0;
+    for (var i = 0; i < 64; i++) {
+      var p = state.board[i];
+      if (!p) continue;
+      var t = p > 0 ? p : -p;
+      if (t === K) continue;
+      if (t === Q) { if (p > 0) whiteQueen++; else blackQueen++; }
+      if ((p > 0) === (me > 0)) myMaterial += PIECE_POINTS[t];
+      else theirMaterial += PIECE_POINTS[t];
+    }
+    if (whiteQueen === 0 && blackQueen === 0) open.push(2);   // queens exchanged
+    if (theirMaterial - myMaterial >= 2) open.push(3);        // two pawns down
+    if (inCheck(state, me)) open.push(4);                     // king in check
+    return open;
+  }
+
+  // the highest puzzle level the match has unlocked
+  function puzzleLevel(state, playerColor) {
+    var open = puzzleLevelsAvailable(state, playerColor);
+    return open[open.length - 1];
+  }
+
   var Scoring = {
     levelMultiplier: levelMultiplier,
     finalScore: finalScore,
@@ -769,6 +801,8 @@
     computerGetsBonus: computerGetsBonus,
     levelPlayable: levelPlayable,
     lowestPlayableLevel: lowestPlayableLevel,
+    puzzleLevelsAvailable: puzzleLevelsAvailable,
+    puzzleLevel: puzzleLevel,
     LEVEL_MULTIPLIER: LEVEL_MULTIPLIER,
     TIME_BONUS: TIME_BONUS,
     LEVEL_CEILING: LEVEL_CEILING
