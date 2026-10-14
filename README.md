@@ -68,9 +68,9 @@ The game ships two **on-page Google AdSense slots**, ready to fill:
 
 To go live:
 
-1. Replace `ca-pub-XXXXXXXXXXXXXXXX` — in the AdSense `<script>` in `<head>` and in both `<ins>` units — with your own publisher id.
-2. Create one ad unit per slot in AdSense (**Ads → By ad unit**) and paste each unit's id into the matching `data-ad-slot`.
-3. Nothing renders until both are real, so the game behaves identically while the placeholders are in place.
+1. The publisher id is set — `ca-pub-3312607688476331` in the AdSense `<script>` in `<head>` and in both `<ins>` units.
+2. Each unit still needs its own **slot id**. Create one ad unit per slot in AdSense (**Ads → By ad unit**) and paste its id into the matching `data-ad-slot`. The placeholders `1111111111` and `2222222222` are not real slots, so a unit stays empty until its id is replaced.
+3. `ads.txt` at the site root authorises Google to sell this inventory, and already carries the publisher id.
 
 **No ad sits inside a dialog.** Google's placement policies rule out pop-ups and overlays, so the game-over and new-game screens deliberately carry no ad unit. If you want to earn on those transitions, the compliant route is Auto ads' vignette format, which Google controls and polices itself.
 
@@ -100,6 +100,7 @@ clock shows each top-up.
 ```
 chess-game/
 ├── index.html              # page layout and modals
+├── ads.txt                 # AdSense publisher authorisation
 ├── css/style.css           # all styling and themes
 ├── js/engine.js            # rules engine + AI + mate search (browser and Node)
 ├── js/puzzles.js           # 20 puzzles in four levels (Chess.com + Lichess + Gardner)
