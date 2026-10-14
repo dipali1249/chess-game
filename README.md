@@ -42,6 +42,12 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - **Puzzles and hints both reset after every match**, so the whole set (and the hints it earns) starts fresh each game
 - **Hints are earned, not given:** each solved puzzle grants one hint credit, and the Hint button costs one credit. With none left, it opens the trainer.
 
+### Accounts and the top 10 (browser-local)
+- **Log in** from the strip at the top of the panel, or keep playing as a guest. An account is a name and a passcode, and it keeps its **own** game points, difficulty progress, puzzle state and hints.
+- Every finished match banks its settled points to whoever is signed in, and counts the game played.
+- **Top 10** ranks the saved players by total points, highest first, with the signed-in player highlighted.
+- **These accounts live in this browser only.** The passcode is hashed so it is not stored as plain text, but this is a local profile — it is not a secure sign-in, and it does not sync between devices. A shared, server-backed leaderboard would need a backend.
+
 ### Interface
 - Drag-and-drop **and** tap/click-to-move (works on touch)
 - Legal-move dots, capture rings, last-move and check highlights
@@ -104,6 +110,7 @@ node tests/puzzles.test.js
 - The engine module is UMD-style: the same file powers the browser game and the Node test suite.
 - Every puzzle is a real position with a solution line — from Chess.com's daily puzzle feed, Lichess's CC0 puzzle set, and the connected knowledge base (Martin Gardner's chess chapter) — and every line is replayed by `tests/puzzles.test.js` on each run.
 - The game-point maths lives in the engine as `Chess.Scoring` (`levelMultiplier(level)`, `finalScore(accumulated, outcome, level)`), and so does the puzzle-level rule (`puzzleLevelsAvailable(state, color)` / `puzzleLevel(state, color)`), so both are unit-tested rather than buried in the UI.
+- Accounts and the leaderboard are browser-local (`royalchess.accounts`, `royalchess.active`, and a per-profile `royalchess.progress`). The passcode is stored as a small non-cryptographic hash: enough to keep it out of plain sight in a local profile, not a security measure.
 - One Gardner problem (Fabel's "Don't Mate in One") could not be reconstructed faithfully from the source figure and was left out rather than guessed at.
 
 ## License
