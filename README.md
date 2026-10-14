@@ -59,6 +59,23 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Synthesized sound effects (move, capture, castle, check, game end) via Web Audio
 - Fully responsive layout for phones and desktops
 
+### Advertising
+
+The game ships two **on-page Google AdSense slots**, ready to fill:
+
+- a wide banner **between the header and the board**
+- a rectangle **in the side panel**, above the move list
+
+To go live:
+
+1. Replace `ca-pub-XXXXXXXXXXXXXXXX` — in the AdSense `<script>` in `<head>` and in both `<ins>` units — with your own publisher id.
+2. Create one ad unit per slot in AdSense (**Ads → By ad unit**) and paste each unit's id into the matching `data-ad-slot`.
+3. Nothing renders until both are real, so the game behaves identically while the placeholders are in place.
+
+**No ad sits inside a dialog.** Google's placement policies rule out pop-ups and overlays, so the game-over and new-game screens deliberately carry no ad unit. If you want to earn on those transitions, the compliant route is Auto ads' vignette format, which Google controls and polices itself.
+
+AdSense also expects a **privacy policy** page on the site, and it looks for original content — worth having both in place before you apply.
+
 ### Time bonuses
 
 Both sides start with 10 minutes. As the game goes on the clock is topped up
