@@ -6,6 +6,8 @@
   const GLYPH = { 1: '\u265F', 2: '\u265E', 3: '\u265D', 4: '\u265C', 5: '\u265B', 6: '\u265A' };
   const PIECE_NAME = { 1: 'pawn', 2: 'knight', 3: 'bishop', 4: 'rook', 5: 'queen', 6: 'king' };
   const VALS = { 1: 1, 2: 3, 3: 3, 4: 5, 5: 9, 6: 0 };
+  const CAP_ORDER = [5, 4, 3, 2, 1];        // captured material, highest value first
+  const PIECE_WORD = { 1: 'pawn', 2: 'knight', 3: 'bishop', 4: 'rook', 5: 'queen' };
 
   const $ = (id) => document.getElementById(id);
   const boardEl = $('board');
@@ -222,33 +224,51 @@
     movelistEl.scrollTop = movelistEl.scrollHeight;
   }
 
+  // ---------- captured material ----------
+  // Each strip shows what that side has taken, grouped by piece with a count, and
+  // the side that is ahead on material carries a "+n" badge.
+  function capturedChips(counts) {
+    let html = '';
+    for (const t of CAP_ORDER) {
+      const n = counts[t] || 0;
+      if (!n) continue;
+      html += '<span class="cap-chip">' + GLYPH[t] + (n > 1 ? '<i>' + n + '</i>' : '') + '</span>';
+    }
+    return html || '<span class="cap-empty">\u2014</span>';
+  }
+
+  function capturedTitle(counts, value) {
+    const parts = [];
+    for (const t of CAP_ORDER) {
+      const n = counts[t] || 0;
+      if (n) parts.push(n + ' ' + PIECE_WORD[t] + (n > 1 ? 's' : ''));
+    }
+    if (!parts.length) return 'Nothing captured yet';
+    return 'Captured ' + parts.join(', ') + ' \u2014 ' + value + ' points';
+  }
+
   function renderCaptured() {
     const hist = game.state.history;
-    const byWhite = [], byBlack = [];
+    const byWhite = {}, byBlack = {};
     let matW = 0, matB = 0;
     for (const h of hist) {
       const m = h.move;
       if (!m.captured) continue;
       const t = Math.abs(m.captured);
-      if (m.captured < 0) { byWhite.push(GLYPH[t]); matW += VALS[t]; }
-      else { byBlack.push(GLYPH[t]); matB += VALS[t]; }
+      if (m.captured < 0) { byWhite[t] = (byWhite[t] || 0) + 1; matW += VALS[t]; }
+      else { byBlack[t] = (byBlack[t] || 0) + 1; matB += VALS[t]; }
     }
-    const order = { '\u265B': 0, '\u265C': 1, '\u265D': 2, '\u265E': 3, '\u265F': 4 };
-    const fmt = (arr, mat, oppMat) => {
-      arr.sort((a, b2) => order[a] - order[b2]);
-      let html = arr.join('');
-      const diff = mat - oppMat;
-      if (diff > 0) html += ' <span class="material-diff">+' + diff + '</span>';
-      return html;
-    };
-    // top strip shows the opponent of playerColor
-    if (playerColor === 1) {
-      capturedTopEl.innerHTML = fmt(byBlack, matB, matW);
-      capturedBottomEl.innerHTML = fmt(byWhite, matW, matB);
-    } else {
-      capturedTopEl.innerHTML = fmt(byWhite, matW, matB);
-      capturedBottomEl.innerHTML = fmt(byBlack, matB, matW);
-    }
+    // the top strip belongs to the engine, the bottom one to the player
+    const topCounts = playerColor === 1 ? byBlack : byWhite;
+    const botCounts = playerColor === 1 ? byWhite : byBlack;
+    const topMat = playerColor === 1 ? matB : matW;
+    const botMat = playerColor === 1 ? matW : matB;
+    const lead = botMat - topMat;                 // positive while the player is ahead
+    const badge = (v) => (v > 0 ? '<span class="material-diff">+' + v + '</span>' : '');
+    capturedTopEl.innerHTML = capturedChips(topCounts) + badge(-lead);
+    capturedBottomEl.innerHTML = capturedChips(botCounts) + badge(lead);
+    capturedTopEl.title = capturedTitle(topCounts, topMat);
+    capturedBottomEl.title = capturedTitle(botCounts, botMat);
   }
 
   function renderEval() {
