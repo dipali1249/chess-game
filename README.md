@@ -45,7 +45,7 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 ### Interface
 - Drag-and-drop **and** tap/click-to-move (works on touch)
 - Legal-move dots, capture rings, last-move and check highlights
-- Live evaluation bar (from your side) and material captured display
+- Live evaluation bar (from your side), plus a **captured-material strip** under each player: the pieces that side has taken, grouped by piece with a count when there is more than one, highest value first, a green **+n** badge on whoever is ahead on material, and a hover tooltip spelling out the tally and its point value
 - Move list in SAN with auto-scroll
 - 10-minute clocks per side with time-forfeit detection, plus level-based time bonuses (see below)
 - Undo (takes back both your move and the engine's reply)
