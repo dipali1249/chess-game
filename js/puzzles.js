@@ -1,4 +1,4 @@
-/* Royal Chess — built-in puzzle set: 20 puzzles in four levels.
+/* Learners Chess — built-in puzzle set: 20 puzzles in four levels.
 
    Each level unlocks as the match develops, and a puzzle is only available at
    the level the game has reached (the highest unlocked level wins):
