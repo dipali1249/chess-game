@@ -13,8 +13,10 @@
   const boardEl = $('board');
   const statusEl = $('status');
   const movelistEl = $('movelist');
+  const evalWrapEl = $('eval-wrap');
   const evalFillEl = $('eval-fill');
   const evalTextEl = $('eval-text');
+  const evalVerdictEl = $('eval-verdict');
   const gamePointsEl = $('game-points');
   const totalPointsEl = $('total-points');
   const scoreMultEl = $('score-mult');
@@ -78,6 +80,7 @@
   let dragState = null;
   let pendingPromo = null;
   let audioCtx = null;
+  let mateKey = null, mateVal = 0;   // cached per position: mateIn is a real search
 
   // ---- puzzle trainer state ----
   const PUZZLES = window.CHESS_PUZZLES || [];
@@ -271,12 +274,63 @@
     capturedBottomEl.title = capturedTitle(botCounts, botMat);
   }
 
+  // The bar reads the way a board does: a white fill for White's share of the
+  // position on a dark track for Black's, with a tick at the halfway mark. The
+  // number and the verdict are from the player's side, and a forced mate overrides
+  // the material count. The mate search is cached per position (see mateKey above).
+  function whiteMateIn2(st, key) {
+    if (key === mateKey) return mateVal;
+    const n = C.AI.mateIn(st, 2);              // mate for whoever is to move
+    mateVal = n ? n * (st.turn === 1 ? 1 : -1) : 0;
+    mateKey = key;
+    return mateVal;
+  }
+
   function renderEval() {
-    const ev = C.AI.evaluate(game.state) * playerColor; // from the player's perspective
-    const clamped = Math.max(-1000, Math.min(1000, ev));
-    evalFillEl.style.width = (50 + clamped / 20) + '%';
-    const p = (ev / 100);
-    evalTextEl.textContent = (p > 0 ? '+' : '') + p.toFixed(1);
+    const st = game.state;
+    if (over) {                                // settled: show the result, not the count
+      if (over.result === 0) {
+        evalFillEl.style.width = '50%';
+        evalFillEl.classList.remove('mate');
+        evalTextEl.textContent = '\u00bd';
+        evalVerdictEl.textContent = 'Draw';
+        evalVerdictEl.className = 'eval-verdict';
+        evalWrapEl.title = 'Draw ' + reasonLabel(over.reason);
+        return;
+      }
+      const whiteWon = over.result === 1;
+      const iWon = over.result === playerColor;
+      evalFillEl.style.width = whiteWon ? '100%' : '0%';
+      evalFillEl.classList.add('mate');
+      evalTextEl.textContent = whiteWon ? '1-0' : '0-1';
+      evalVerdictEl.textContent = iWon ? 'You won' : 'Engine won';
+      evalVerdictEl.className = 'eval-verdict ' + (iWon ? 'good' : 'bad');
+      evalWrapEl.title = (whiteWon ? 'White' : 'Black') + ' wins ' + reasonLabel(over.reason);
+      return;
+    }
+    const white = C.AI.evaluate(st);           // centipawns, White's point of view
+    const mine = white * playerColor;          // ... and from the player's side
+    const mateWhite = whiteMateIn2(st, game.fen());
+    const mateMine = mateWhite * playerColor;
+    const share = mateWhite ? (mateWhite > 0 ? 100 : 0)
+      : 50 + Math.max(-1000, Math.min(1000, white)) / 20;
+    evalFillEl.style.width = Math.max(0, Math.min(100, share)) + '%';
+    evalFillEl.classList.toggle('mate', !!mateWhite);
+    const p = mine / 100;
+    const shown = mateWhite ? '#' + Math.abs(mateWhite) : (mine >= 0 ? '+' : '') + p.toFixed(1);
+    evalTextEl.textContent = shown;
+    let verdict, cls;
+    if (mateMine) { verdict = mateMine > 0 ? 'Mate for you' : 'Mate for the engine'; cls = 'mate'; }
+    else if (p >= 5) { verdict = 'You are winning'; cls = 'good'; }
+    else if (p >= 2) { verdict = 'You are better'; cls = 'good'; }
+    else if (p > 0.4) { verdict = 'You are slightly better'; cls = 'good'; }
+    else if (p <= -5) { verdict = 'Engine is winning'; cls = 'bad'; }
+    else if (p <= -2) { verdict = 'Engine is better'; cls = 'bad'; }
+    else if (p < -0.4) { verdict = 'Engine is slightly better'; cls = 'bad'; }
+    else { verdict = 'Level'; cls = ''; }
+    evalVerdictEl.textContent = verdict;
+    evalVerdictEl.className = 'eval-verdict' + (cls ? ' ' + cls : '');
+    evalWrapEl.title = 'Evaluation ' + shown + ' \u2014 ' + verdict.toLowerCase();
   }
 
   // ---------- game points ----------
