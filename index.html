@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Learners Chess</title>
 <link rel="stylesheet" href="css/style.css">
+<!-- Google AdSense. Replace the placeholder client id below with your own publisher id
+     (it looks like ca-pub-1234567890123456). The two <ins> units in the page carry the
+     matching client id plus a per-unit slot id. -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
 </head>
 <body data-theme="classic">
 <div class="app">
@@ -12,6 +16,19 @@
     <h1 class="logo">Learners <span>Chess</span></h1>
     <p class="tagline">Full-rules engine &middot; Built-in AI &middot; Drag or tap to move</p>
   </header>
+
+  <!-- Ad slot 1 of 2 — a wide banner between the header and the board.
+       Fill in data-ad-client (your publisher id) and data-ad-slot (this unit's id,
+       from AdSense → Ads → By ad unit). -->
+  <div class="ad-slot ad-slot-header">
+    <span class="ad-tag">Advertisement</span>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+         data-ad-slot="1111111111"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+  </div>
 
   <main>
     <section class="board-area">
@@ -72,6 +89,18 @@
       <div class="puzzle-panel">
         <div class="puzzle-panel-row"><span>Puzzle training</span><span id="hint-credits" class="hint-credits">0 hints</span></div>
         <div class="puzzle-panel-row" id="puzzle-panel-progress">0 of 20 solved</div>
+      </div>
+
+      <!-- Ad slot 2 of 2 — in the side panel, above the move list.
+           Fill in data-ad-client (your publisher id) and data-ad-slot (this unit's id). -->
+      <div class="ad-slot ad-slot-panel">
+        <span class="ad-tag">Advertisement</span>
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+             data-ad-slot="2222222222"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
       </div>
 
       <div class="movelist-box">
