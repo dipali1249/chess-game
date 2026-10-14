@@ -219,4 +219,22 @@ assert.strictEqual(Chess.Scoring.lowestPlayableLevel(50000), 5);
 assert.strictEqual(Chess.Scoring.lowestPlayableLevel(99999), 5);
 console.log('level gating OK (ceilings 5000 / 10000 / 30000 / 50000)');
 
+// ---- puzzle levels (unlocked by the match situation) ----
+// level 1 is the base level; 2 = queens exchanged, 3 = two pawns down, 4 = king in check
+const openAt = (fen, col) => Chess.Scoring.puzzleLevelsAvailable(new Chess.Game(fen).state, col);
+const levelAt = (fen, col) => Chess.Scoring.puzzleLevel(new Chess.Game(fen).state, col);
+assert.deepStrictEqual(openAt('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', 1), [1]);
+assert.deepStrictEqual(openAt('rnb1kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNB1KBNR w KQkq - 0 1', 1), [1, 2]);
+assert.deepStrictEqual(openAt('rnb1kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', 1), [1]);
+assert.deepStrictEqual(openAt('rnbqkbnr/pppppppp/8/8/8/8/PP1PPP1P/RNBQKBNR w KQkq - 0 1', 1), [1, 3]);
+assert.deepStrictEqual(openAt('rnbqkbnr/pppppppp/8/8/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1', 1), [1]);
+assert.deepStrictEqual(openAt('rnbqkbnr/pp1pp1pp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1', -1), [1, 3]);
+assert.deepStrictEqual(openAt('3qk3/8/8/8/8/8/4r3/3QKR2 w - - 0 1', 1), [1, 4]);
+assert.deepStrictEqual(openAt('4r3/8/8/8/8/8/8/4KR2 w - - 0 1', 1), [1, 2, 4]);
+assert.deepStrictEqual(openAt('k3r3/6pp/8/8/8/8/8/4KR2 w - - 0 1', 1), [1, 2, 3, 4]);
+assert.strictEqual(levelAt('k3r3/6pp/8/8/8/8/8/4KR2 w - - 0 1', 1), 4);   // highest open level wins
+assert.strictEqual(levelAt('rnbqkbnr/pp1pp1pp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1', -1), 3);
+assert.strictEqual(levelAt('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', 1), 1);
+console.log('puzzle levels OK (opening / queens exchanged / two pawns down / king in check)');
+
 console.log('\nAll engine tests passed.');
