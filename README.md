@@ -69,7 +69,7 @@ The game ships two **on-page Google AdSense slots**, ready to fill:
 To go live:
 
 1. The publisher id is set — `ca-pub-3312607688476331` in the AdSense `<script>` in `<head>` and in both `<ins>` units.
-2. The slot id is set as well — `9000840234`. Both placements currently share that one ad unit; give the side panel its own unit later if you want per-slot reporting.
+2. The slot ids are set as well, one unit per placement: `9000840234` for the header banner and `3698628351` for the side panel, so the two report separately.
 3. `ads.txt` at the site root authorises Google to sell this inventory, and already carries the publisher id.
 
 **No ad sits inside a dialog.** Google's placement policies rule out pop-ups and overlays, so the game-over and new-game screens deliberately carry no ad unit. If you want to earn on those transitions, the compliant route is Auto ads' vignette format, which Google controls and polices itself.
