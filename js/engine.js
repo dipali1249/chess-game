@@ -1,5 +1,5 @@
 /* ============================================================
-   Royal Chess — engine
+   Learners Chess — engine
    Complete rules: castling, en passant, promotion, checks,
    checkmate, stalemate, 50-move rule, threefold repetition,
    insufficient material. AI: negamax + alpha-beta + quiescence
