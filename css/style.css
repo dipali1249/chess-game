@@ -19,6 +19,7 @@
   --last-to: rgba(246, 226, 100, 0.58);
   --sel: rgba(124, 108, 240, 0.55);
   --hint: rgba(90, 190, 120, 0.55);
+  --good: #66c88a;
 }
 
 /* Board themes */
@@ -109,14 +110,38 @@ main {
 .pinfo { flex: 1; min-width: 0; }
 .pname { font-weight: 700; font-size: 0.92rem; }
 .pcaptured {
-  min-height: 18px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  min-height: 20px;
+  margin-top: 1px;
   font-size: 15px;
   line-height: 18px;
-  letter-spacing: 1px;
   color: var(--text-dim);
   opacity: 0.95;
 }
-.material-diff { color: var(--accent); font-size: 0.78rem; margin-left: 4px; }
+.cap-chip { display: inline-flex; align-items: baseline; letter-spacing: 0; }
+.cap-chip i {
+  font-style: normal;
+  font-size: 0.6em;
+  font-weight: 700;
+  margin-left: 1px;
+  opacity: 0.8;
+}
+.cap-empty { opacity: 0.35; letter-spacing: 0; }
+.material-diff {
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(102, 200, 138, 0.16);
+  border: 1px solid rgba(102, 200, 138, 0.45);
+  color: var(--good);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 17px;
+}
 
 .clock {
   position: relative;
