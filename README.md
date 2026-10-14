@@ -30,11 +30,16 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Closed levels are struck through and disabled in the New Game dialog, with a note explaining why; a saved difficulty that has since closed is moved up to the lowest level still open
 
 ### Puzzle training (earn your hints)
-- **Every puzzle is a real position with a solution line** — two from the connected knowledge base (Martin Gardner's chess chapter) and five daily puzzles from [Chess.com](https://www.chess.com/daily). Nothing is generated locally, and there are no multiple-choice questions.
-- No levels: one flat set, worked through in order
+- **20 puzzles in four levels, five per level** — every one a real position with a solution line, taken from [Chess.com](https://www.chess.com/daily)'s daily puzzles, [Lichess](https://lichess.org/training)'s openly licensed (CC0) puzzle set, and two classics from the connected knowledge base (Martin Gardner's chess chapter). Nothing is generated locally, and there are no multiple-choice questions.
+- **A level unlocks as the match develops**, and when several are open the highest is used first:
+  - **Level 1** — the base level, open from the opening
+  - **Level 2** — unlocks once the queens are exchanged (both off the board)
+  - **Level 3** — unlocks when you are two pawns down (or worse) in material
+  - **Level 4** — unlocks while your king is in check
+- Locked levels are struck through and unclickable in the trainer, with a note saying what unlocks each one; you can drop back to a lower open level at any time
 - Play the solution on the board; the opponent's replies are played for you
 - **Each puzzle can be solved once per match** — once solved it is locked and skipped
-- **The whole set resets after every match**, so the puzzles (and the hints they earn) start fresh each game
+- **Puzzles and hints both reset after every match**, so the whole set (and the hints it earns) starts fresh each game
 - **Hints are earned, not given:** each solved puzzle grants one hint credit, and the Hint button costs one credit. With none left, it opens the trainer.
 
 ### Interface
@@ -79,7 +84,7 @@ chess-game/
 ├── index.html              # page layout and modals
 ├── css/style.css           # all styling and themes
 ├── js/engine.js            # rules engine + AI + mate search (browser and Node)
-├── js/puzzles.js           # the puzzle set (Gardner + Chess.com, flat, no levels)
+├── js/puzzles.js           # 20 puzzles in four levels (Chess.com + Lichess + Gardner)
 ├── js/main.js              # UI, drag & drop, clocks, sounds, puzzle trainer
 ├── tests/engine.test.js    # perft + rules + AI tests
 └── tests/puzzles.test.js   # re-verifies every shipped puzzle
@@ -96,8 +101,8 @@ node tests/puzzles.test.js
 
 - The board is a flat `Int8Array(64)` (index 0 = a8), pieces signed by color — fast enough for a depth-3 alpha-beta search with quiescence in plain JavaScript.
 - The engine module is UMD-style: the same file powers the browser game and the Node test suite.
-- Every puzzle is a real position with a solution line — two from the connected knowledge base (Martin Gardner's chess chapter) and five from Chess.com's daily puzzle feed — and every line is replayed by `tests/puzzles.test.js` on each run.
-- The game-point maths lives in the engine as `Chess.Scoring` (`levelMultiplier(level)`, `finalScore(accumulated, outcome, level)`) so it is unit-tested rather than buried in the UI.
+- Every puzzle is a real position with a solution line — from Chess.com's daily puzzle feed, Lichess's CC0 puzzle set, and the connected knowledge base (Martin Gardner's chess chapter) — and every line is replayed by `tests/puzzles.test.js` on each run.
+- The game-point maths lives in the engine as `Chess.Scoring` (`levelMultiplier(level)`, `finalScore(accumulated, outcome, level)`), and so does the puzzle-level rule (`puzzleLevelsAvailable(state, color)` / `puzzleLevel(state, color)`), so both are unit-tested rather than buried in the UI.
 - One Gardner problem (Fabel's "Don't Mate in One") could not be reconstructed faithfully from the source figure and was left out rather than guessed at.
 
 ## License
