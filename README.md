@@ -59,23 +59,6 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Synthesized sound effects (move, capture, castle, check, game end) via Web Audio
 - Fully responsive layout for phones and desktops
 
-### Advertising
-
-The game ships two **on-page Google AdSense slots**, ready to fill:
-
-- a wide banner **between the header and the board**
-- a rectangle **in the side panel**, above the move list
-
-To go live:
-
-1. The publisher id is set — `ca-pub-3312607688476331` in the AdSense `<script>` in `<head>` and in both `<ins>` units.
-2. The slot ids are set as well, one unit per placement: `9000840234` for the header banner and `3698628351` for the side panel, so the two report separately.
-3. `ads.txt` at the site root authorises Google to sell this inventory, and already carries the publisher id.
-
-**No ad sits inside a dialog.** Google's placement policies rule out pop-ups and overlays, so the game-over and new-game screens deliberately carry no ad unit. If you want to earn on those transitions, the compliant route is Auto ads' vignette format, which Google controls and polices itself.
-
-AdSense also expects a **privacy policy** page on the site, and it looks for original content — worth having both in place before you apply.
-
 ### Time bonuses
 
 Both sides start with 10 minutes. As the game goes on the clock is topped up
@@ -100,7 +83,6 @@ clock shows each top-up.
 ```
 chess-game/
 ├── index.html              # page layout and modals
-├── ads.txt                 # AdSense publisher authorisation
 ├── css/style.css           # all styling and themes
 ├── js/engine.js            # rules engine + AI + mate search (browser and Node)
 ├── js/puzzles.js           # 20 puzzles in four levels (Chess.com + Lichess + Gardner)
