@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Royal Chess</title>
+<title>Learners Chess</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body data-theme="classic">
 <div class="app">
   <header>
-    <h1 class="logo">Royal <span>Chess</span></h1>
+    <h1 class="logo">Learners <span>Chess</span></h1>
     <p class="tagline">Full-rules engine &middot; Built-in AI &middot; Drag or tap to move</p>
   </header>
 
@@ -43,17 +43,6 @@
     </section>
 
     <aside class="panel">
-      <div class="account-strip">
-        <div class="account-who">
-          <span class="account-label">Playing as</span>
-          <span class="account-name" id="account-name">Guest</span>
-        </div>
-        <div class="account-actions">
-          <button id="btn-account" class="btn btn-mini">Log in</button>
-          <button id="btn-leaderboard" class="btn btn-mini">Top 10</button>
-        </div>
-      </div>
-
       <div class="controls">
         <button id="btn-new" class="btn primary">New game</button>
         <button id="btn-undo" class="btn">Undo</button>
@@ -161,43 +150,6 @@
       <button id="btn-puzzle-next" class="btn primary" disabled>Next puzzle</button>
       <button id="btn-puzzle-reset" class="btn">Reset</button>
       <button id="btn-puzzle-close" class="btn">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- Log in modal -->
-<div id="login-modal" class="modal hidden">
-  <div class="modal-card">
-    <h3>Log in</h3>
-    <p class="modal-note">Accounts and scores are kept in this browser only — this is a local profile, not a secure sign-in.</p>
-    <div class="option-group">
-      <div class="option-label">Player name</div>
-      <input id="login-name" class="field" type="text" maxlength="14" placeholder="Your name" autocomplete="off">
-    </div>
-    <div class="option-group">
-      <div class="option-label">Passcode</div>
-      <input id="login-pin" class="field" type="password" maxlength="12" placeholder="At least 4 characters" autocomplete="off">
-    </div>
-    <p class="login-error" id="login-error"></p>
-    <div class="modal-actions">
-      <button id="btn-login" class="btn primary">Log in</button>
-      <button id="btn-create" class="btn">Create account</button>
-    </div>
-    <div class="modal-actions">
-      <button id="btn-guest" class="btn">Play as guest</button>
-      <button id="btn-cancel-login" class="btn">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- Top 10 modal -->
-<div id="leaderboard-modal" class="modal hidden">
-  <div class="modal-card leaderboard-card">
-    <h3>Top 10 players</h3>
-    <div class="leaderboard" id="leaderboard"></div>
-    <p class="modal-note">Ranked by total game points. Saved in this browser.</p>
-    <div class="modal-actions">
-      <button id="btn-close-leaderboard" class="btn primary">Close</button>
     </div>
   </div>
 </div>
