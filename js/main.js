@@ -9,9 +9,10 @@
   const CAP_ORDER = [5, 4, 3, 2, 1];        // captured material, highest value first
   const PIECE_WORD = { 1: 'pawn', 2: 'knight', 3: 'bishop', 4: 'rook', 5: 'queen' };
 
-  // ---- progress storage (saved in this browser) ----
+  // ---- storage keys (everything lives in this browser) ----
   const PROGRESS_KEY = 'learnerschess.progress';
   const LEGACY_PROGRESS_KEY = 'royalchess.progress';   // carried over once, from before the rename
+  const RECORD_KEY = 'learnerschess.record';           // JSON: { name, score, date }
 
   const $ = (id) => document.getElementById(id);
   const boardEl = $('board');
@@ -63,6 +64,9 @@
   const btnPuzzles = $('btn-puzzles');
   const hintCreditsEl = $('hint-credits');
   const puzzlePanelProgress = $('puzzle-panel-progress');
+  const recordScoreEl = $('record-score');
+  const recordByEl = $('record-by');
+  const nameInput = $('name-input');
 
   // ---------- state ----------
   let game = new C.Game();
@@ -85,6 +89,8 @@
   let pendingPromo = null;
   let audioCtx = null;
   let mateKey = null, mateVal = 0;   // cached per position: mateIn is a real search
+  let playerName = '';               // the name attached to a new record
+  let record = null;                 // { name, score, date } — the best single game so far
 
   // ---- puzzle trainer state ----
   const PUZZLES = window.CHESS_PUZZLES || [];
@@ -113,8 +119,11 @@
     buildBoard();
     bindEvents();
     loadProgress();
+    loadRecord();
     markDifficultyButtons();
     updateHintUI();
+    updateRecordUI();
+    nameInput.value = playerName;
     openModal(newgameModal);
     newGame(1, difficulty);
   }
@@ -683,6 +692,7 @@
       totalPoints += final;
       saveProgress();
       updateScoreUI();
+      checkRecord(final);               // a new best single-game score replaces the record
     }
     const how = outcome > 0
       ? 'accumulated ' + fmtPts(gamePoints) + ' \u00d7' + m + ' for the win'
@@ -785,6 +795,7 @@
         currentIndex = p.currentIndex || 0;
         difficulty = p.difficulty || 3;
         totalPoints = p.totalPoints || 0;
+        playerName = p.name || '';
       }
     } catch (e) { /* storage unavailable */ }
     if (!C.Scoring.levelPlayable(difficulty, totalPoints)) {
@@ -796,9 +807,70 @@
     try {
       window.localStorage.setItem(PROGRESS_KEY, JSON.stringify({
         hintCredits: hintCredits, solvedIds: solvedIds, currentIndex: currentIndex,
-        difficulty: difficulty, totalPoints: totalPoints
+        difficulty: difficulty, totalPoints: totalPoints, name: playerName
       }));
     } catch (e) { /* ignore */ }
+  }
+
+  // ---------- highest-score record ----------
+  // One record, kept as JSON in this browser: the best single-game score and the
+  // name of whoever set it. A new best replaces it outright, so the old record is
+  // gone — it is not a running list of scores.
+  function loadRecord() {
+    try {
+      const raw = window.localStorage.getItem(RECORD_KEY);
+      const r = raw ? JSON.parse(raw) : null;
+      record = (r && typeof r.score === 'number' && typeof r.name === 'string') ? r : null;
+    } catch (e) { record = null; }
+  }
+
+  function saveRecord() {
+    try { window.localStorage.setItem(RECORD_KEY, JSON.stringify(record)); }
+    catch (e) { /* ignore */ }
+  }
+
+  function updateRecordUI() {
+    if (!record) {
+      recordScoreEl.textContent = '\u2014';
+      recordScoreEl.className = 'record-value';
+      recordByEl.textContent = 'No record yet';
+      recordByEl.className = 'record-by';
+      recordByEl.title = '';
+      return;
+    }
+    recordScoreEl.textContent = fmtPts(record.score);
+    recordScoreEl.className = 'record-value' +
+      (record.score > 0.049 ? ' pos' : (record.score < -0.049 ? ' neg' : ''));
+    recordByEl.textContent = 'by ' + record.name;
+    recordByEl.className = 'record-by';
+    recordByEl.title = 'Best single game: ' + fmtPts(record.score) + ' by ' + record.name +
+      (record.date ? ' on ' + record.date : '');
+  }
+
+  // a settled game takes the record when it beats it; returns true when it does
+  function checkRecord(final) {
+    if (record && final <= record.score) return false;
+    record = {
+      name: playerName || 'Anonymous',
+      score: final,
+      date: new Date().toISOString().slice(0, 10)
+    };
+    saveRecord();
+    updateRecordUI();
+    recordByEl.textContent = 'New record \u2014 by ' + record.name;
+    recordByEl.className = 'record-by fresh';
+    return true;
+  }
+
+  function setPlayerName(raw) {
+    playerName = String(raw || '').trim().replace(/\s+/g, ' ').slice(0, 16);
+    // a record set before a name was typed adopts it, rather than staying Anonymous
+    if (record && record.name === 'Anonymous' && playerName) {
+      record.name = playerName;
+      saveRecord();
+      updateRecordUI();
+    }
+    saveProgress();
   }
 
   // every match ends with a fresh puzzle slate, so the whole set can be worked again
@@ -1346,6 +1418,8 @@
       pendingPromo = null;
       clearSelection();
     });
+
+    nameInput.addEventListener('input', () => setPlayerName(nameInput.value));
 
     const segPlevel = $('seg-plevel');
     if (segPlevel) {
