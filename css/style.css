@@ -428,14 +428,6 @@ main {
 .score-value.pos { color: #7ee08a; }
 .score-value.neg { color: #ff8f8f; }
 .score-mult { font-size: 0.72rem; }
-.score-best { margin-top: 4px; border-top: 1px solid var(--panel-border); padding-top: 6px; }
-.highscore-line {
-  font-size: 0.76rem;
-  color: var(--text-dim);
-  padding: 2px 2px 0;
-  font-weight: 600;
-}
-.highscore-line #best-name { color: #ffd98a; font-weight: 800; }
 
 /* move list */
 .movelist-box {

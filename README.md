@@ -59,12 +59,6 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Synthesized sound effects (move, capture, castle, check, game end) via Web Audio
 - Fully responsive layout for phones and desktops
 
-### High score
-- The highest **Total points** figure ever reached is kept as a record, together with the name of whoever set it
-- A new best **replaces (resets)** the old record to the new holder, and asks the player for a name
-- The record shows as **Best score** in the panel, with the top scorer's name on the line beneath it
-- It is stored in `data/highscore.json` in this repository and updated through the small backend in `server/`; when no backend is reachable the same record is cached in the browser, so the feature still works
-
 ### Time bonuses
 
 Both sides start with 10 minutes. As the game goes on the clock is topped up
@@ -92,13 +86,9 @@ chess-game/
 ├── css/style.css           # all styling and themes
 ├── js/engine.js            # rules engine + AI + mate search (browser and Node)
 ├── js/puzzles.js           # 20 puzzles in four levels (Chess.com + Lichess + Gardner)
-├── js/highscore.js         # high-score record helpers (browser, backend and Node)
 ├── js/main.js              # UI, drag & drop, clocks, sounds, puzzle trainer
-├── data/highscore.json     # the high-score record, committed by the backend
-├── server/server.js        # zero-dependency backend: serves the game + the high-score API
 ├── tests/engine.test.js    # perft + rules + AI tests
-├── tests/puzzles.test.js   # re-verifies every shipped puzzle
-└── tests/highscore.test.js # high-score record logic
+└── tests/puzzles.test.js   # re-verifies every shipped puzzle
 ```
 
 ## Run the tests
@@ -106,28 +96,7 @@ chess-game/
 ```bash
 node tests/engine.test.js
 node tests/puzzles.test.js
-node tests/highscore.test.js
 ```
-
-## Run the high-score backend
-
-The game plays fine as a static site, but recording the high score into
-`data/highscore.json` needs the little backend in `server/` (zero dependencies —
-Node built-ins only):
-
-```bash
-GITHUB_TOKEN=<a repo-scoped token> node server/server.js
-```
-
-Then open `http://localhost:8080`. The server serves the game and exposes:
-
-- `GET  /api/highscore` — the current record `{ name, score, updated }`
-- `POST /api/highscore` — `{ name, score }`, stored only when it beats the record
-
-With `GITHUB_TOKEN` set, the record is committed to this repository through the
-GitHub Contents API (the token needs **Contents: read and write** on the repo);
-without it the server runs in local mode and reads/writes the file on disk.
-Configuration lives in the environment — see `.env.example`. **Never commit a token.**
 
 ## Tech notes
 
