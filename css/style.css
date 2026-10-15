@@ -452,26 +452,11 @@ footer {
 .mv-san.active { background: var(--accent-soft); color: var(--accent); border-radius: 6px; }
 .movelist .empty { color: var(--text-faint); font-size: 0.85rem; padding: 10px 8px; }
 
-/* ============ learn view ============ */
-.learn, .dash { max-width: 1000px; }
-.learn-head { margin-bottom: 20px; }
-.learn-head h2 { margin: 0 0 4px; font-size: 1.4rem; }
-.learn-head p { margin: 0; color: var(--text-dim); font-size: 0.92rem; }
-
-.learn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
-.lesson-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 20px 22px;
-  box-shadow: var(--shadow-sm);
-}
-.lesson-card h3 { margin: 0 0 12px; font-size: 1.08rem; color: var(--accent); }
-.lesson-card ul { margin: 0; padding: 0; list-style: none; }
-.lesson-card li { position: relative; padding: 5px 0 5px 18px; font-size: 0.9rem; color: var(--text-dim); }
-.lesson-card li::before { content: ""; position: absolute; left: 2px; top: 12px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent-2); }
-.lesson-card b { color: var(--text); }
-.lesson-card .btn { margin-top: 16px; }
+/* view headings */
+.dash { max-width: 1000px; }
+.view-head { margin-bottom: 20px; }
+.view-head h2 { margin: 0 0 4px; font-size: 1.4rem; }
+.view-head p { margin: 0; color: var(--text-dim); font-size: 0.92rem; }
 
 /* ============ progress view ============ */
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px; }

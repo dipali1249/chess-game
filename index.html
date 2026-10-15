@@ -24,17 +24,9 @@
         <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l11-6.5z"/></svg></span>
         <span>Play</span>
       </button>
-      <button class="nav-item" data-view="learn">
-        <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5A1.5 1.5 0 0 0 20 18.5z"/></svg></span>
-        <span>Learn</span>
-      </button>
       <button class="nav-item" data-view="progress">
         <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V5M19 20v-6"/><path d="M3 20h18"/></svg></span>
         <span>Progress</span>
-      </button>
-      <button class="nav-item" id="nav-puzzles">
-        <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/></svg></span>
-        <span>Puzzle trainer</span>
       </button>
     </nav>
 
@@ -138,62 +130,10 @@
         </aside>
       </section>
 
-      <!-- ---------- LEARN ---------- -->
-      <section class="view hidden" id="view-learn">
-        <div class="learn">
-          <div class="learn-head">
-            <h2>Learn chess</h2>
-            <p>A calm, quick reference to the rules this board enforces, and how to get the most out of the trainer.</p>
-          </div>
-
-          <div class="learn-grid">
-            <article class="lesson-card">
-              <h3>How the pieces move</h3>
-              <ul>
-                <li><b>Pawn</b> — one square forward, or two on its first move; captures diagonally.</li>
-                <li><b>Knight</b> — an L-shape: two squares one way, then one across. The only piece that jumps.</li>
-                <li><b>Bishop</b> — any distance diagonally.</li>
-                <li><b>Rook</b> — any distance along ranks and files.</li>
-                <li><b>Queen</b> — any distance along ranks, files and diagonals.</li>
-                <li><b>King</b> — one square in any direction, and may never move into check.</li>
-              </ul>
-            </article>
-
-            <article class="lesson-card">
-              <h3>Special moves</h3>
-              <ul>
-                <li><b>Castling</b> — the king and a rook move together, once per game, if neither has moved and the king is not in, passing through, or landing on check.</li>
-                <li><b>En passant</b> — a pawn may capture a pawn that has just advanced two squares, as if it had moved only one.</li>
-                <li><b>Promotion</b> — a pawn reaching the far rank becomes a queen, rook, bishop or knight.</li>
-              </ul>
-            </article>
-
-            <article class="lesson-card">
-              <h3>Ending a game</h3>
-              <ul>
-                <li><b>Checkmate</b> — the king is attacked and cannot escape; the game is won.</li>
-                <li><b>Stalemate</b> — no legal move, but the king is not in check; a draw.</li>
-                <li><b>Draws</b> — threefold repetition, the fifty-move rule, and insufficient material.</li>
-              </ul>
-            </article>
-
-            <article class="lesson-card">
-              <h3>Getting the most from the trainer</h3>
-              <ul>
-                <li>Hints are earned, not given: each puzzle you solve adds one hint credit.</li>
-                <li>Puzzle levels unlock as the game develops — the trainer opens the highest level available.</li>
-                <li>Every puzzle is a real position with a solution line; play the winning moves.</li>
-              </ul>
-              <button class="btn" id="learn-open-puzzles">Open the puzzle trainer</button>
-            </article>
-          </div>
-        </div>
-      </section>
-
       <!-- ---------- PROGRESS ---------- -->
       <section class="view hidden" id="view-progress">
         <div class="dash">
-          <div class="learn-head">
+          <div class="view-head">
             <h2>Your progress</h2>
             <p>Everything here is kept in this browser, across games.</p>
           </div>

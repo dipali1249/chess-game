@@ -15,10 +15,9 @@
   var Scoring = (window.Chess && window.Chess.Scoring) || null;
 
   // ---------- views ----------
-  var VIEWS = { play: $('view-play'), learn: $('view-learn'), progress: $('view-progress') };
+  var VIEWS = { play: $('view-play'), progress: $('view-progress') };
   var TITLES = {
     play: ['Play', 'A full game against the engine'],
-    learn: ['Learn', 'Rules and trainer tips'],
     progress: ['Progress', 'Your scores and puzzle record']
   };
 
@@ -42,7 +41,7 @@
   });
 
   // ---------- puzzle launcher (reuses the game's own button) ----------
-  ['nav-puzzles', 'learn-open-puzzles', 'dash-open-puzzles'].forEach(function (id) {
+  ['dash-open-puzzles'].forEach(function (id) {
     var el = $(id);
     if (el) el.addEventListener('click', function () {
       var p = $('btn-puzzles');

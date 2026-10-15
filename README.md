@@ -43,8 +43,7 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - **Hints are earned, not given:** each solved puzzle grants one hint credit, and the Hint button costs one credit. With none left, it opens the trainer.
 
 ### Learning platform shell
-- A sidebar that switches between three views — **Play**, **Learn** and **Progress** — plus a one-tap **Puzzle trainer** launcher
-- **Learn** — a calm reference to how the pieces move, the special moves, and how games end, with tips for getting the most from the trainer
+- A sidebar that switches between two views — **Play** and **Progress**
 - **Progress** — total points, the current level with a meter to the next ceiling, puzzles solved and hints available, all read live from the browser store
 - A light, editorial theme: serif headings, card-based surfaces and a calm navy accent
 
