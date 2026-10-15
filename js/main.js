@@ -650,6 +650,7 @@
     const outcome = over.result === 0 ? 0 : (over.result === playerColor ? 1 : -1);
     const final = C.Scoring.finalScore(gamePoints, outcome, difficulty);
     const hintDelta = outcome > 0 ? 3 : outcome === 0 ? 1 : -2;   // win +3, draw +1, loss -2
+    const hintsBefore = hintCredits;
     if (!gameSettled) {                 // bank this game's score once
       gameSettled = true;
       totalPoints += final;
@@ -663,9 +664,15 @@
       : outcome < 0
         ? 'accumulated ' + fmtPts(gamePoints) + ' \u00f7' + m + ' for the loss'
         : 'accumulated ' + fmtPts(gamePoints) + ' \u00d71 for the draw';
-    const hintText = (hintDelta > 0 ? '+' : '') + hintDelta +
-      (Math.abs(hintDelta) === 1 ? ' hint' : ' hints') +
-      ' for the ' + (outcome > 0 ? 'win' : outcome < 0 ? 'loss' : 'draw');
+    // the hint line never prints a negative number — say the change in words
+    const hintsGained = Math.max(0, hintCredits - hintsBefore);
+    const hintsLost = Math.max(0, hintsBefore - hintCredits);
+    const hintWord = (n) => (n === 1 ? ' hint' : ' hints');
+    const hintText = hintsGained > 0
+      ? '+' + hintsGained + hintWord(hintsGained) + ' for the ' + (outcome > 0 ? 'win' : 'draw')
+      : hintsLost > 0
+        ? hintsLost + hintWord(hintsLost) + ' lost'
+        : 'no hints lost';
     gameoverScoreEl.innerHTML = '<span class="final">' + fmtPts(final) + ' game points</span>' +
       '<span class="detail">' + how + '</span>' +
       '<span class="detail">' + hintText + '</span>';
@@ -757,7 +764,7 @@
       const raw = window.localStorage.getItem(PROGRESS_KEY);
       if (raw) {
         const p = JSON.parse(raw);
-        hintCredits = p.hintCredits || 0;
+        hintCredits = Math.max(0, p.hintCredits || 0);   // hints are never negative
         difficulty = p.difficulty || 3;
         totalPoints = p.totalPoints || 0;
       }
