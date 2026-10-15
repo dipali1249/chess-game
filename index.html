@@ -119,8 +119,8 @@
           </div>
 
           <div class="puzzle-panel">
-            <div class="puzzle-panel-row"><span>Puzzle training</span><span id="hint-credits" class="hint-credits">0 hints</span></div>
-            <div class="puzzle-panel-row" id="puzzle-panel-progress">0 of 20 solved</div>
+            <div class="puzzle-panel-row"><span>Hints</span><span id="hint-credits" class="hint-credits">0 hints</span></div>
+            <div class="puzzle-panel-row">Earned as the game develops</div>
           </div>
 
           <div class="movelist-box">
@@ -150,11 +150,6 @@
               <div class="stat-note" id="dash-level-name">Beginner</div>
             </div>
             <div class="stat-card">
-              <div class="stat-label">Puzzles solved</div>
-              <div class="stat-value" id="dash-solved">0 / 20</div>
-              <div class="stat-note">Each solve earns one hint</div>
-            </div>
-            <div class="stat-card">
               <div class="stat-label">Hints available</div>
               <div class="stat-value" id="dash-hints">0</div>
               <div class="stat-note">Spend one on a Hint during a game</div>
@@ -172,12 +167,10 @@
 
           <div class="panel-card">
             <div class="panel-card-head">
-              <h3>Puzzle training</h3>
-              <span class="muted" id="dash-puzzle-note"></span>
+              <h3>Puzzle trainer</h3>
             </div>
-            <div class="meter"><div class="meter-fill" id="dash-puzzle-bar"></div></div>
-            <p class="muted small">Puzzles reset at the start of every match. Solve them to earn hints.</p>
-            <button class="btn primary" id="dash-open-puzzles">Open puzzle trainer</button>
+            <p class="muted small">The puzzles now live in their own repository. In a game, hints are earned as the match reaches a puzzle situation — the queens exchanged, two pawns down, or your king in check.</p>
+            <button class="btn primary" id="dash-open-puzzles">Open the puzzle trainer</button>
           </div>
         </div>
       </section>
@@ -212,41 +205,6 @@
   </div>
 </div>
 
-<!-- Puzzle trainer modal -->
-<div id="puzzle-modal" class="modal hidden">
-  <div class="modal-card puzzle-card">
-    <div class="puzzle-head">
-      <div>
-        <div class="puzzle-level" id="puzzle-level-label">Level 1</div>
-        <div class="puzzle-theme" id="puzzle-theme">Puzzle</div>
-      </div>
-      <div class="puzzle-hints" id="puzzle-hints">0 hints</div>
-    </div>
-    <div class="option-group">
-      <div class="option-label">Puzzle level</div>
-      <div class="segmented" id="seg-plevel">
-        <button data-value="1">1</button>
-        <button data-value="2">2</button>
-        <button data-value="3">3</button>
-        <button data-value="4">4</button>
-      </div>
-      <p class="modal-note" id="plevel-note"></p>
-    </div>
-    <div class="puzzle-progress"><div class="puzzle-progress-fill" id="puzzle-progress-fill"></div></div>
-    <div class="puzzle-progress-text" id="puzzle-progress-text">Puzzle 1</div>
-    <div class="puzzle-board-wrap">
-      <div id="puzzle-board" class="board puzzle-board"></div>
-    </div>
-    <div class="puzzle-answers" id="puzzle-answers"></div>
-    <div class="puzzle-status" id="puzzle-status">White to move</div>
-    <div class="modal-actions">
-      <button id="btn-puzzle-next" class="btn primary" disabled>Next puzzle</button>
-      <button id="btn-puzzle-reset" class="btn">Reset</button>
-      <button id="btn-puzzle-close" class="btn">Close</button>
-    </div>
-  </div>
-</div>
-
 <!-- New game modal -->
 <div id="newgame-modal" class="modal hidden">
   <div class="modal-card">
@@ -277,8 +235,8 @@
   </div>
 </div>
 
+<script>window.PUZZLES_URL = 'https://dipali1249.github.io/learners-chess-puzzles/';</script>
 <script src="js/engine.js"></script>
-<script src="js/puzzles.js"></script>
 <script src="js/shell.js"></script>
 <script src="js/main.js"></script>
 </body>

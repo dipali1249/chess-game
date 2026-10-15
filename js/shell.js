@@ -1,9 +1,9 @@
 /* ============================================================
    Learners Chess — platform shell
-   Sidebar navigation between the Play / Learn / Progress views,
-   and the Progress dashboard. Reads the same browser-stored
-   progress the game keeps (learnerschess.progress) and mirrors
-   the live scoreboard values, so nothing here changes game logic.
+   Sidebar navigation between the Play and Progress views, and the
+   Progress dashboard. Reads the same browser-stored progress the
+   game keeps (learnerschess.progress) and mirrors the live
+   scoreboard values, so nothing here changes game logic.
    ============================================================ */
 (function () {
   'use strict';
@@ -18,7 +18,7 @@
   var VIEWS = { play: $('view-play'), progress: $('view-progress') };
   var TITLES = {
     play: ['Play', 'A full game against the engine'],
-    progress: ['Progress', 'Your scores and puzzle record']
+    progress: ['Progress', 'Your scores and hints']
   };
 
   function show(view) {
@@ -40,13 +40,11 @@
     b.addEventListener('click', function () { show(b.getAttribute('data-view')); });
   });
 
-  // ---------- puzzle launcher (reuses the game's own button) ----------
-  ['dash-open-puzzles'].forEach(function (id) {
-    var el = $(id);
-    if (el) el.addEventListener('click', function () {
-      var p = $('btn-puzzles');
-      if (p) p.click();
-    });
+  // ---------- puzzle trainer (its own site now) ----------
+  var PUZZLES_URL = window.PUZZLES_URL || 'https://dipali1249.github.io/learners-chess-puzzles/';
+  var openBtn = $('dash-open-puzzles');
+  if (openBtn) openBtn.addEventListener('click', function () {
+    window.open(PUZZLES_URL, '_blank', 'noopener');
   });
 
   // ---------- progress data ----------
@@ -87,17 +85,12 @@
     set('dash-level-note', note);
     setWidth('dash-level-bar', pct);
 
-    var solved = p.solvedIds ? Object.keys(p.solvedIds).length : 0;
-    var totalP = (window.CHESS_PUZZLES && window.CHESS_PUZZLES.length) || 20;
-    set('dash-solved', solved + ' / ' + totalP);
     set('dash-hints', String(Number(p.hintCredits) || 0));
-    set('dash-puzzle-note', solved + ' of ' + totalP + ' solved');
-    setWidth('dash-puzzle-bar', totalP ? (solved / totalP) * 100 : 0);
   }
 
   // keep the shell in step with the live scoreboard the game updates
   if (window.MutationObserver) {
-    ['total-points', 'hint-credits', 'puzzle-panel-progress'].forEach(function (id) {
+    ['total-points', 'hint-credits'].forEach(function (id) {
       var el = $(id);
       if (!el) return;
       new MutationObserver(renderProgress).observe(el, { childList: true, characterData: true, subtree: true });

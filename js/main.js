@@ -12,6 +12,7 @@
   // ---- progress storage (saved in this browser) ----
   const PROGRESS_KEY = 'learnerschess.progress';
   const LEGACY_PROGRESS_KEY = 'royalchess.progress';   // carried over once, from before the rename
+  const PUZZLES_URL = window.PUZZLES_URL || 'https://dipali1249.github.io/learners-chess-puzzles/';
 
   const $ = (id) => document.getElementById(id);
   const boardEl = $('board');
@@ -48,21 +49,8 @@
   const newgameModal = $('newgame-modal');
   const segColor = $('seg-color');
   const segDiff = $('seg-diff');
-  const puzzleModal = $('puzzle-modal');
-  const puzzleBoardEl = $('puzzle-board');
-  const puzzleAnswersEl = $('puzzle-answers');
-  const puzzleLevelLabel = $('puzzle-level-label');
-  const puzzleThemeEl = $('puzzle-theme');
-  const puzzleStatusEl = $('puzzle-status');
-  const puzzleProgressFill = $('puzzle-progress-fill');
-  const puzzleProgressText = $('puzzle-progress-text');
-  const puzzleHintsEl = $('puzzle-hints');
-  const btnPuzzleNext = $('btn-puzzle-next');
-  const btnPuzzleReset = $('btn-puzzle-reset');
-  const btnPuzzleClose = $('btn-puzzle-close');
   const btnPuzzles = $('btn-puzzles');
   const hintCreditsEl = $('hint-credits');
-  const puzzlePanelProgress = $('puzzle-panel-progress');
 
   // ---------- state ----------
   let game = new C.Game();
@@ -86,25 +74,9 @@
   let audioCtx = null;
   let mateKey = null, mateVal = 0;   // cached per position: mateIn is a real search
 
-  // ---- puzzle trainer state ----
-  const PUZZLES = window.CHESS_PUZZLES || [];
+  // ---- hints (earned when a puzzle situation arises) ----
   let hintCredits = 0;
-  let solvedIds = {};
-  let currentIndex = 0;
-  let currentPuzzle = null;
-  let puzzleGame = null;
-  let puzzleSqEls = [];
-  let puzzleSelected = -1;
-  let puzzleMoves = [];
-  let puzzlePhase = 'player';
-  let puzzleStage = 'mate';
-  let puzzlePlies = 0;
-  let puzzleBusy = false;
-  let puzzleLast = null;
-  let puzzlePlayer = 1;        // the colour the solver plays in the current puzzle
-  let puzzleFlipped = false;   // show the puzzle from the solver's side
-  let puzzleLineIdx = 0;       // position in the stored line (goal 'line')
-  let puzzleLevelSel = 1;      // which puzzle level the trainer is showing
+  let grantedLevels = {};      // puzzle levels already rewarded this match
 
   init();
 
@@ -163,7 +135,7 @@
     const rect = boardEl.getBoundingClientRect();
     if (rect.width > 0) boardEl.style.fontSize = (rect.width / 8) * 0.78 + 'px';
   }
-  window.addEventListener('resize', () => { resizeBoard(); resizePuzzleBoard(); });
+  window.addEventListener('resize', resizeBoard);
 
   // ---------- rendering ----------
   function renderPieces() {
@@ -532,6 +504,7 @@
     }
     applyTimeBonus();
     if (game.inCheck()) playSound('check');
+    grantSituationHints();
     scheduleAI();
     return true;
   }
@@ -711,7 +684,6 @@
     gameoverTitle.textContent = title;
     gameoverText.textContent = text;
     renderGameScore();
-    resetPuzzles();               // the next match starts with the puzzles fresh again
     syncAll();
     setTimeout(() => openModal(gameoverModal), 350);
   }
@@ -732,6 +704,7 @@
     gamePoints = 0;
     pointsHistory = [];
     gameSettled = false;
+    grantedLevels = {};           // hints are re-earned in each match
     gameoverScoreEl.innerHTML = '';
     buildBoard();
     updateStrips();
@@ -773,7 +746,6 @@
     return active ? active.dataset.value : null;
   }
 
-  // ===================== puzzle trainer =====================
   // ---------- progress (saved in this browser) ----------
   function loadProgress() {
     try {
@@ -781,8 +753,6 @@
       if (raw) {
         const p = JSON.parse(raw);
         hintCredits = p.hintCredits || 0;
-        solvedIds = p.solvedIds || {};
-        currentIndex = p.currentIndex || 0;
         difficulty = p.difficulty || 3;
         totalPoints = p.totalPoints || 0;
       }
@@ -795,74 +765,10 @@
   function saveProgress() {
     try {
       window.localStorage.setItem(PROGRESS_KEY, JSON.stringify({
-        hintCredits: hintCredits, solvedIds: solvedIds, currentIndex: currentIndex,
+        hintCredits: hintCredits,
         difficulty: difficulty, totalPoints: totalPoints
       }));
     } catch (e) { /* ignore */ }
-  }
-
-  // every match ends with a fresh puzzle slate, so the whole set can be worked again
-  function resetPuzzles() {
-    solvedIds = {};
-    hintCredits = 0;
-    currentIndex = 0;
-    saveProgress();
-    updateHintUI();
-  }
-
-  function solvedCount() {
-    return PUZZLES.filter((p) => solvedIds[p.id]).length;
-  }
-
-  // ---- puzzle levels: which level this match has unlocked ----
-  // Level 1 is always open; level 2 unlocks once the queens are exchanged, level 3
-  // when the player is two pawns down, level 4 while the player's king is in check.
-  // When several are open the highest one is used first.
-  function availablePuzzleLevels() {
-    return C.Scoring.puzzleLevelsAvailable(game.state, playerColor);
-  }
-
-  function puzzlesAtLevel(n) {
-    return PUZZLES.filter((p) => p.level === n);
-  }
-
-  function lockReason(n) {
-    if (n === 2) return 'level 2 unlocks when the queens are exchanged';
-    if (n === 3) return 'level 3 unlocks when you are two pawns down';
-    if (n === 4) return 'level 4 unlocks while your king is in check';
-    return 'locked';
-  }
-
-  function markPuzzleLevelButtons() {
-    const open = availablePuzzleLevels();
-    if (open.indexOf(puzzleLevelSel) < 0) puzzleLevelSel = open[open.length - 1];
-    const seg = $('seg-plevel');
-    if (seg) {
-      seg.querySelectorAll('button').forEach((b) => {
-        const lvl = +b.dataset.value;
-        const on = open.indexOf(lvl) >= 0;
-        b.disabled = !on;
-        b.title = on ? '' : 'Locked \u2014 ' + lockReason(lvl);
-        b.classList.toggle('active', on && lvl === puzzleLevelSel);
-      });
-    }
-    const note = $('plevel-note');
-    if (note) {
-      note.textContent = 'Open in this match: ' + open.map((n) => 'level ' + n).join(', ') +
-        '. The highest open level is used first \u2014 ' + lockReason(2) + ', ' + lockReason(3) +
-        ', ' + lockReason(4) + '.';
-    }
-  }
-
-  // index (within the current level) of the next unsolved puzzle, searching forward
-  function firstUnsolvedFrom(start) {
-    const list = puzzlesAtLevel(puzzleLevelSel);
-    if (!list.length) return -1;
-    for (let i = 0; i < list.length; i++) {
-      const idx = ((start + i) % list.length + list.length) % list.length;
-      if (!solvedIds[list[idx].id]) return idx;
-    }
-    return -1;
   }
 
   function markDifficultyButtons() {
@@ -886,381 +792,39 @@
     const word = hintCredits === 1 ? ' hint' : ' hints';
     hintCreditsEl.textContent = hintCredits + word;
     btnHint.textContent = 'Hint (' + hintCredits + ')';
-    puzzleHintsEl.textContent = hintCredits + word;
-    const ps = PUZZLES;
-    puzzlePanelProgress.textContent = solvedCount() + ' of ' + ps.length + ' solved';
   }
 
-  // ---- puzzle board rendering ----
-  function buildPuzzleBoard() {
-    puzzleBoardEl.innerHTML = '';
-    puzzleSqEls = new Array(64);
-    for (let v = 0; v < 64; v++) {
-      const sq = puzzleFlipped ? 63 - v : v;
-      const row = v >> 3, col = v & 7;
-      const el = document.createElement('div');
-      el.className = 'square ' + (((row + col) % 2 === 0) ? 'light' : 'dark');
-      el.dataset.sq = sq;
-      if (col === 0) {
-        const r = document.createElement('span');
-        r.className = 'coord rank'; r.textContent = 8 - row;
-        el.appendChild(r);
-      }
-      if (row === 7) {
-        const f = document.createElement('span');
-        f.className = 'coord file'; f.textContent = 'abcdefgh'[col];
-        el.appendChild(f);
-      }
-      el.addEventListener('pointerdown', () => onPuzzleClick(sq));
-      puzzleBoardEl.appendChild(el);
-      puzzleSqEls[sq] = el;
-    }
-    resizePuzzleBoard();
-  }
-
-  function resizePuzzleBoard() {
-    if (!puzzleBoardEl) return;
-    const rect = puzzleBoardEl.getBoundingClientRect();
-    if (rect.width > 0) puzzleBoardEl.style.fontSize = (rect.width / 8) * 0.78 + 'px';
-  }
-
-  function renderPuzzlePieces() {
-    if (!puzzleGame) return;
-    for (let sq = 0; sq < 64; sq++) {
-      const el = puzzleSqEls[sq];
-      if (!el) continue;
-      const old = el.querySelector('.piece');
-      if (old) old.remove();
-      const p = puzzleGame.state.board[sq];
-      if (p) {
-        const s = document.createElement('span');
-        s.className = 'piece ' + (p > 0 ? 'white' : 'black');
-        s.textContent = GLYPH[Math.abs(p)];
-        el.appendChild(s);
-      }
-    }
-  }
-
-  function renderPuzzleHighlights() {
-    for (let sq = 0; sq < 64; sq++) {
-      const el = puzzleSqEls[sq];
-      if (!el) continue;
-      el.classList.remove('selected', 'dot', 'capturable', 'last-from', 'last-to', 'check');
-    }
-    if (!puzzleGame) return;
-    if (puzzleLast) {
-      puzzleSqEls[puzzleLast.from].classList.add('last-from');
-      puzzleSqEls[puzzleLast.to].classList.add('last-to');
-    }
-    if (puzzleSelected >= 0) {
-      puzzleSqEls[puzzleSelected].classList.add('selected');
-      for (const m of puzzleMoves) puzzleSqEls[m.to].classList.add(m.captured ? 'capturable' : 'dot');
-    }
-    if (currentPuzzle && currentPuzzle.kind === 'line' && puzzleGame.inCheck()) {
-      puzzleSqEls[puzzleGame.state.kings[puzzleGame.state.turn > 0 ? 0 : 1]].classList.add('check');
-    }
-  }
-
-  function renderPuzzle() { renderPuzzlePieces(); renderPuzzleHighlights(); }
-
-  function puzzleStatus(msg, cls) {
-    puzzleStatusEl.className = 'puzzle-status' + (cls ? ' ' + cls : '');
-    puzzleStatusEl.textContent = msg;
-  }
-
-  // ---- puzzle flow ----
-  function openPuzzles() {
-    if (!PUZZLES.length) return;
-    if (!puzzleBoardEl.childElementCount) buildPuzzleBoard();
-    closeModal(newgameModal);
-    closeModal(gameoverModal);
-    openModal(puzzleModal);
-    resizePuzzleBoard();
-    // several levels can be open at once: prefer the highest
-    const openLevels = availablePuzzleLevels();
-    puzzleLevelSel = openLevels[openLevels.length - 1];
-    markPuzzleLevelButtons();
-    currentIndex = 0;
-    const idx = firstUnsolvedFrom(0);
-    if (idx < 0) { showAllSolved(); return; }
-    loadPuzzle(idx);
-  }
-
-  // ---- the answers for a 'question' puzzle (none ship any more, kept for completeness) ----
-  function renderPuzzleAnswers() {
-    puzzleAnswersEl.innerHTML = '';
-    const p = currentPuzzle;
-    if (!p || p.kind !== 'question' || !p.choices) return;
-    p.choices.forEach((text, i) => {
-      const b = document.createElement('button');
-      b.className = 'btn';
-      b.textContent = text;
-      b.addEventListener('click', () => attemptAnswer(i, b));
-      puzzleAnswersEl.appendChild(b);
-    });
-  }
-
-  function lockAnswers(lock) {
-    puzzleAnswersEl.querySelectorAll('button').forEach((b) => { b.disabled = lock; });
-  }
-
-  function attemptAnswer(index, btn) {
-    if (!currentPuzzle || currentPuzzle.kind !== 'question') return;
-    if (puzzlePhase !== 'player') return;
-    if (index === currentPuzzle.answer) {
-      btn.classList.add('correct');
-      lockAnswers(true);
-      solvePuzzle();
-    } else {
-      btn.classList.add('wrong');
-      btn.disabled = true;
-      puzzleStatus('Not quite \u2014 try again', 'wrong');
-      puzzleAnswersEl.classList.add('puzzle-shake');
-      setTimeout(() => puzzleAnswersEl.classList.remove('puzzle-shake'), 320);
-    }
-  }
-
-  function showAllSolved() {
-    const list = puzzlesAtLevel(puzzleLevelSel);
-    currentPuzzle = null;
-    puzzleGame = null;
-    puzzlePhase = 'done';
-    puzzleAnswersEl.innerHTML = '';
-    puzzleBoardEl.innerHTML = '';
-    puzzleLevelLabel.textContent = 'Level ' + puzzleLevelSel + ' complete';
-    puzzleThemeEl.textContent = 'Every level ' + puzzleLevelSel + ' puzzle has been solved this match.';
-    puzzleStatus('All ' + list.length + ' level ' + puzzleLevelSel + ' puzzles solved \u2014 well played!', 'solved');
-    puzzleProgressText.textContent = 'Level ' + puzzleLevelSel + ' complete';
-    puzzleProgressFill.style.width = '100%';
-    btnPuzzleNext.disabled = true;
-  }
-
-  function loadPuzzle(index) {
-    const list = puzzlesAtLevel(puzzleLevelSel);
-    if (index < 0 || index >= list.length) return;
-    const p = list[index];
-    const solved = !!solvedIds[p.id];
-    currentIndex = index;
-    currentPuzzle = p;
-    puzzleGame = p.fen ? new C.Game(p.fen) : null;
-    puzzleSelected = -1;
-    puzzleMoves = [];
-    puzzleLast = null;
-    puzzleBusy = false;
-    puzzlePhase = solved ? 'solved' : 'player';
-    puzzleStage = p.kind;
-    puzzlePlies = 0;
-    puzzleLineIdx = 0;
-    puzzlePlayer = p.player === 'b' ? -1 : (p.player === 'w' ? 1 : (puzzleGame ? puzzleGame.state.turn : 1));
-    puzzleFlipped = puzzlePlayer === -1;
-    const side = puzzlePlayer === 1 ? 'White' : 'Black';
-    puzzleLevelLabel.textContent = 'Level ' + p.level + ' \u2014 ' + (p.source || 'Puzzle');
-    puzzleThemeEl.textContent = p.theme + (p.note ? ' \u2014 ' + p.note : '') +
-      (p.kind === 'question' ? ' ' + p.question : '');
-    puzzleProgressText.textContent = 'Level ' + puzzleLevelSel + ' \u2014 puzzle ' + (index + 1) + ' of ' + list.length;
-    puzzleProgressFill.style.width = (list.filter((q) => solvedIds[q.id]).length / list.length * 100) + '%';
-    btnPuzzleNext.disabled = false;
-    buildPuzzleBoard();
-    renderPuzzleAnswers();
-    renderPuzzle();
-    if (solved) {
-      puzzleStatus('Solved \u2014 this one is done.', 'solved');
-      lockAnswers(true);
-    } else if (p.kind === 'question') {
-      puzzleStatus('Choose an answer', null);
-    } else {
-      puzzleStatus(side + ' to move \u2014 play the winning line', null);
-    }
-    updateHintUI();
-    // 'line' puzzles can start with the opponent to move: play their move for them
-    if (!solved && p.kind === 'line' && puzzleGame && puzzleGame.state.turn !== puzzlePlayer) {
-      puzzleBusy = true;
-      puzzleStatus('Opponent plays \u2014 watch', 'good');
-      setTimeout(() => {
-        playLineMove();
-        puzzleBusy = false;
-        if (puzzleLineIdx >= p.line.length) { solvePuzzle(); return; }
-        puzzleStatus(side + ' to move \u2014 play the winning line', null);
-        renderPuzzle();
-      }, 600);
-    }
-  }
-
-  function onPuzzleClick(sq) {
-    if (!puzzleGame || !currentPuzzle || currentPuzzle.kind !== 'line') return;
-    if (puzzleBusy || puzzlePhase !== 'player') return;
-    if (puzzleGame.state.turn !== puzzlePlayer) return;   // only the solver's moves
-    if (puzzleSelected >= 0 && puzzleMoves.some((m) => m.to === sq)) {
-      attemptPuzzleMove(puzzleSelected, sq);
-      return;
-    }
-    const p = puzzleGame.state.board[sq];
-    if (p && (p > 0) === (puzzlePlayer > 0)) {
-      puzzleSelected = sq;
-      puzzleMoves = puzzleGame.moves(sq);
-    } else {
-      puzzleSelected = -1;
-      puzzleMoves = [];
-    }
-    renderPuzzleHighlights();
-  }
-
-  function knightAttacksSq(sq) {
-    const r = sq >> 3, c = sq & 7, out = [];
-    const D = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
-    for (const [dr, dc] of D) {
-      const rr = r + dr, cc = c + dc;
-      if (rr >= 0 && rr < 8 && cc >= 0 && cc < 8) out.push(rr * 8 + cc);
-    }
-    return out;
-  }
-
-  function blackRookSq() {
-    for (let i = 0; i < 64; i++) if (puzzleGame.state.board[i] === -4) return i;
-    return -1;
-  }
-
-  // play the next stored move (used by the 'line' puzzles for the opponent's replies)
-  function playLineMove() {
-    if (!currentPuzzle || !currentPuzzle.line) return;
-    const san = currentPuzzle.line[puzzleLineIdx];
-    if (!san) return;
-    for (const m of puzzleGame.moves()) {
-      puzzleGame.move(m.from, m.to, m.promotion || 0);
-      const got = puzzleGame.state.history[puzzleGame.state.history.length - 1].move.san;
-      puzzleGame.undo();
-      if (got === san) {
-        puzzleGame.move(m.from, m.to, m.promotion || 0);
-        puzzleLast = { from: m.from, to: m.to };
-        puzzleLineIdx++;
-        playSound('move');
-        renderPuzzle();
-        return;
-      }
-    }
-  }
-
-  function attemptPuzzleMove(from, to) {
-    const cands = puzzleGame.moves().filter((m) => m.from === from && m.to === to);
-    if (!cands.length) return;
-    const promo = cands.length > 1 ? 5 : (cands[0].promotion || 0);   // auto-queen in puzzles
-    const goal = currentPuzzle.kind;
-    const rookBefore = goal === 'winrook' ? blackRookSq() : -1;
-
-    puzzleGame.move(from, to, promo);
-    puzzleLast = { from: from, to: to };
-    puzzleSelected = -1;
-    puzzleMoves = [];
-    renderPuzzle();
-
-    if (goal === 'line') {
-      const played = puzzleGame.state.history[puzzleGame.state.history.length - 1].move.san;
-      if (played !== currentPuzzle.line[puzzleLineIdx]) return puzzleWrong();
-      puzzleLineIdx++;
-      if (puzzleLineIdx >= currentPuzzle.line.length) { solvePuzzle(); return; }
-      puzzleBusy = true;
-      puzzleStatus('Correct \u2014 keep going', 'good');
-      setTimeout(() => {
-        playLineMove();
-        puzzleBusy = false;
-        if (puzzleLineIdx >= currentPuzzle.line.length) { solvePuzzle(); return; }
-        puzzleStatus('Your move \u2014 keep going', 'good');
-        renderPuzzle();
-      }, 420);
-      return;
-    }
-
-    if (goal === 'winrook') {
-      if (puzzleStage === 'fork') {
-        const m = puzzleGame.state.history[puzzleGame.state.history.length - 1].move;
-        const forked = Math.abs(m.piece) === 2 && puzzleGame.inCheck() &&
-          knightAttacksSq(to).includes(rookBefore);
-        if (!forked) return puzzleWrong();
-        puzzleStage = 'capture';
-        puzzleBusy = true;
-        puzzleStatus('Fork! \u2014 now win the rook', 'good');
-        setTimeout(() => {
-          playOpponentReply();
-          puzzleBusy = false;
-          puzzleStatus('Now take the rook', 'good');
-          renderPuzzle();
-        }, 420);
-        return;
-      }
-      if (to !== rookBefore) return puzzleWrong();      // must actually capture the rook
-      solvePuzzle();
-      return;
-    }
-
-    // mate puzzles
-    if (puzzleGame.moves().length === 0) {
-      if (puzzleGame.inCheck()) { solvePuzzle(); return; }
-      return puzzleWrong();                             // stalemate
-    }
-    if (!C.AI.mateWithin(puzzleGame.state, puzzlePlies - 1)) return puzzleWrong();
-    puzzleBusy = true;
-    puzzleStatus('Correct! \u2014 the engine replies\u2026', 'good');
-    setTimeout(() => {
-      playOpponentReply();
-      puzzlePlies -= 2;
-      puzzleBusy = false;
-      puzzleStatus('Your move \u2014 keep going', 'good');
-      renderPuzzle();
-    }, 420);
-  }
-
-  function puzzleWrong() {
-    puzzleGame.undo();
-    puzzleLast = null;
-    puzzleSelected = -1;
-    puzzleMoves = [];
-    renderPuzzle();
-    puzzleStatus('Not the move \u2014 try again', 'wrong');
-    puzzleBoardEl.classList.add('puzzle-shake');
-    setTimeout(() => puzzleBoardEl.classList.remove('puzzle-shake'), 320);
-  }
-
-  function playOpponentReply() {
-    const replies = puzzleGame.moves();
-    if (!replies.length) return;
-    let best = replies[0], bestScore = -Infinity;
-    for (const r of replies) {
-      puzzleGame.move(r.from, r.to, r.promotion || 0);
-      const score = currentPuzzle.kind === 'winrook'
-        ? -C.AI.evaluate(puzzleGame.state)               // black's point of view
-        : C.AI.mateIn(puzzleGame.state, 4);              // longest defence
-      puzzleGame.undo();
-      if (score > bestScore) { bestScore = score; best = r; }
-    }
-    puzzleGame.move(best.from, best.to, best.promotion || 0);
-    puzzleLast = { from: best.from, to: best.to };
-    playSound('move');
-    renderPuzzle();
-  }
-
-  function solvePuzzle() {
-    if (!currentPuzzle) return;
-    puzzlePhase = 'solved';
-    const already = !!solvedIds[currentPuzzle.id];
-    let msg = already ? 'Already solved' : 'Solved! +1 hint earned (' + (hintCredits + 1) + ' total)';
-    if (!already) {
-      solvedIds[currentPuzzle.id] = true;
+  // ---------- hints from puzzle situations ----------
+  // The puzzle set lives in its own repository now (see PUZZLES_URL). A hint is
+  // earned each time the match reaches a situation that unlocks a puzzle level —
+  // the queens exchanged, two pawns down, or the king in check — once per level
+  // per match. Level 1 is the base level, so it does not pay.
+  function grantSituationHints() {
+    const open = C.Scoring.puzzleLevelsAvailable(game.state, playerColor);
+    for (const lvl of open) {
+      if (lvl === 1 || grantedLevels[lvl]) continue;
+      grantedLevels[lvl] = true;
       hintCredits++;
       saveProgress();
+      updateHintUI();
+      flashHintEarned(lvl);
     }
-    if (currentPuzzle.explain) msg = 'Solved! ' + currentPuzzle.explain;
-    playSound('end');
-    btnPuzzleNext.disabled = false;
-    puzzleStatus(msg, 'solved');
-    puzzleProgressFill.style.width = (solvedCount() / PUZZLES.length * 100) + '%';
-    renderPuzzle();
-    updateHintUI();
   }
 
-  function nextPuzzle() {
-    const idx = firstUnsolvedFrom(currentIndex + 1);
-    if (idx < 0) { showAllSolved(); return; }
-    loadPuzzle(idx);
+  function flashHintEarned(lvl) {
+    const label = lvl === 2 ? 'queens exchanged' : lvl === 3 ? 'two pawns down' : 'king in check';
+    const panel = hintCreditsEl.closest('.puzzle-panel') || hintCreditsEl.parentElement;
+    if (!panel) return;
+    const badge = document.createElement('span');
+    badge.className = 'hint-earned';
+    badge.textContent = '+1 hint \u2014 ' + label;
+    panel.appendChild(badge);
+    setTimeout(() => badge.remove(), 2600);
+  }
+
+  // the puzzle trainer is its own site now
+  function openPuzzles() {
+    window.open(PUZZLES_URL, '_blank', 'noopener');
   }
 
   // ---------- events ----------
@@ -1318,8 +882,7 @@
     btnHint.addEventListener('click', () => {
       if (over || thinking || game.state.turn !== playerColor) return;
       if (hintCredits <= 0) {
-        statusEl.textContent = 'Solve a puzzle to earn a hint';
-        openPuzzles();
+        statusEl.textContent = 'No hints yet \u2014 earn them as the game develops';
         return;
       }
       const m = C.AI.search(game.state, 2);
@@ -1347,26 +910,7 @@
       clearSelection();
     });
 
-    const segPlevel = $('seg-plevel');
-    if (segPlevel) {
-      segPlevel.addEventListener('click', (e) => {
-        const b = e.target.closest('button');
-        if (!b || b.disabled) return;      // locked levels can't be picked
-        puzzleLevelSel = +b.dataset.value;
-        markPuzzleLevelButtons();
-        currentIndex = 0;
-        const idx = firstUnsolvedFrom(0);
-        if (idx < 0) { showAllSolved(); return; }
-        loadPuzzle(idx);
-      });
-    }
     btnPuzzles.addEventListener('click', openPuzzles);
-    btnPuzzleClose.addEventListener('click', () => closeModal(puzzleModal));
-    btnPuzzleReset.addEventListener('click', () => {
-      if (!currentPuzzle || solvedIds[currentPuzzle.id]) return;
-      loadPuzzle(currentIndex);
-    });
-    btnPuzzleNext.addEventListener('click', nextPuzzle);
 
     $('btn-rematch').addEventListener('click', () => {
       closeModal(gameoverModal);

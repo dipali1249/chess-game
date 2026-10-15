@@ -1,6 +1,6 @@
 # Learners Chess
 
-An advanced, dependency-free chess game with a complete rules engine, a built-in AI opponent, and a puzzle trainer that earns you hints — playable in any modern browser.
+An advanced, dependency-free chess game with a complete rules engine and a built-in AI opponent — playable in any modern browser. The puzzle trainer lives in its own repository, [learners-chess-puzzles](https://github.com/dipali1249/learners-chess-puzzles).
 
 ## Play it
 
@@ -29,22 +29,15 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - A level closes once your total reaches its ceiling: **Level 1 at 5000, Level 2 at 10000, Level 3 at 30000, Level 4 at 50000** — Level 5 never closes, so a rising total pushes you up the levels
 - Closed levels are struck through and disabled in the New Game dialog, with a note explaining why; a saved difficulty that has since closed is moved up to the lowest level still open
 
-### Puzzle training (earn your hints)
-- **20 puzzles in four levels, five per level** — every one a real position with a solution line, taken from [Chess.com](https://www.chess.com/daily)'s daily puzzles, [Lichess](https://lichess.org/training)'s openly licensed (CC0) puzzle set, and two classics from the connected knowledge base (Martin Gardner's chess chapter). Nothing is generated locally, and there are no multiple-choice questions.
-- **A level unlocks as the match develops**, and when several are open the highest is used first:
-  - **Level 1** — the base level, open from the opening
-  - **Level 2** — unlocks once the queens are exchanged (both off the board)
-  - **Level 3** — unlocks when you are two pawns down (or worse) in material
-  - **Level 4** — unlocks while your king is in check
-- Locked levels are struck through and unclickable in the trainer, with a note saying what unlocks each one; you can drop back to a lower open level at any time
-- Play the solution on the board; the opponent's replies are played for you
-- **Each puzzle can be solved once per match** — once solved it is locked and skipped
-- **Puzzles and hints both reset after every match**, so the whole set (and the hints it earns) starts fresh each game
-- **Hints are earned, not given:** each solved puzzle grants one hint credit, and the Hint button costs one credit. With none left, it opens the trainer.
+### Hints, earned from the game
+- The **Hint** button costs one hint credit and highlights the engine's suggested move on the board
+- **A hint is earned each time the match reaches a situation that unlocks a puzzle level** — the queens exchanged, two pawns down (or worse) in material, or your king in check — once per situation per match, with a short flash on the panel when it happens
+- Hints reset at the start of every match
+- The **Puzzles** button (and the Progress view) opens the puzzle trainer, which lives in its own repository: [learners-chess-puzzles](https://github.com/dipali1249/learners-chess-puzzles) — 20 puzzles in four levels, live at [dipali1249.github.io/learners-chess-puzzles](https://dipali1249.github.io/learners-chess-puzzles/)
 
 ### Learning platform shell
 - A sidebar that switches between two views — **Play** and **Progress**
-- **Progress** — total points, the current level with a meter to the next ceiling, puzzles solved and hints available, all read live from the browser store
+- **Progress** — total points, the current level with a meter to the next ceiling, and hints available, all read live from the browser store
 - A light, editorial theme: serif headings, card-based surfaces and a calm navy accent
 
 ### Interface
@@ -90,25 +83,24 @@ chess-game/
 ├── index.html              # page layout and modals
 ├── css/style.css           # all styling and themes
 ├── js/engine.js            # rules engine + AI + mate search (browser and Node)
-├── js/puzzles.js           # 20 puzzles in four levels (Chess.com + Lichess + Gardner)
-├── js/main.js              # UI, drag & drop, clocks, sounds, puzzle trainer
+├── js/main.js              # UI, drag & drop, clocks, sounds, hints
 ├── js/shell.js             # sidebar navigation + the Progress dashboard
-├── tests/engine.test.js    # perft + rules + AI tests
-└── tests/puzzles.test.js   # re-verifies every shipped puzzle
+└── tests/engine.test.js    # perft + rules + AI tests
 ```
+
+The puzzle set lives in its own repository — [learners-chess-puzzles](https://github.com/dipali1249/learners-chess-puzzles).
 
 ## Run the tests
 
 ```bash
 node tests/engine.test.js
-node tests/puzzles.test.js
 ```
 
 ## Tech notes
 
 - The board is a flat `Int8Array(64)` (index 0 = a8), pieces signed by color — fast enough for a depth-3 alpha-beta search with quiescence in plain JavaScript.
 - The engine module is UMD-style: the same file powers the browser game and the Node test suite.
-- Every puzzle is a real position with a solution line — from Chess.com's daily puzzle feed, Lichess's CC0 puzzle set, and the connected knowledge base (Martin Gardner's chess chapter) — and every line is replayed by `tests/puzzles.test.js` on each run.
+- The puzzle set (its data, its validator, and the page that plays it) lives in its own repository, [learners-chess-puzzles](https://github.com/dipali1249/learners-chess-puzzles); the game links to it rather than bundling it.
 - The game-point maths lives in the engine as `Chess.Scoring` (`levelMultiplier(level)`, `finalScore(accumulated, outcome, level)`), and so does the puzzle-level rule (`puzzleLevelsAvailable(state, color)` / `puzzleLevel(state, color)`), so both are unit-tested rather than buried in the UI.
 - One Gardner problem (Fabel's "Don't Mate in One") could not be reconstructed faithfully from the source figure and was left out rather than guessed at.
 

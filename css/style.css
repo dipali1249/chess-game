@@ -430,6 +430,23 @@ footer {
 }
 .puzzle-panel-row { display: flex; justify-content: space-between; gap: 8px; font-size: 0.82rem; color: var(--text-dim); font-weight: 600; }
 .hint-credits { color: var(--accent); }
+.hint-earned {
+  align-self: flex-start;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--good-soft);
+  border: 1px solid rgba(47, 125, 82, 0.4);
+  color: var(--good);
+  font-size: 0.72rem;
+  font-weight: 700;
+  animation: hintEarned 2.6s ease-out forwards;
+}
+@keyframes hintEarned {
+  0% { opacity: 0; transform: translateY(4px); }
+  12% { opacity: 1; transform: translateY(0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
 
 /* move list */
 .movelist-box {
