@@ -741,7 +741,7 @@
   }
 
   function updateStrips() {
-    const oppColor = playerColor === 1 ? 'White' : 'Black';
+    const oppColor = playerColor === 1 ? 'Black' : 'White';
     const myColor = playerColor === 1 ? 'White' : 'Black';
     nameTopEl.textContent = 'Engine (' + oppColor + ')';
     nameBottomEl.textContent = 'You (' + myColor + ')';

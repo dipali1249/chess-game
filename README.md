@@ -42,6 +42,12 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - **Puzzles and hints both reset after every match**, so the whole set (and the hints it earns) starts fresh each game
 - **Hints are earned, not given:** each solved puzzle grants one hint credit, and the Hint button costs one credit. With none left, it opens the trainer.
 
+### Learning platform shell
+- A sidebar that switches between three views — **Play**, **Learn** and **Progress** — plus a one-tap **Puzzle trainer** launcher
+- **Learn** — a calm reference to how the pieces move, the special moves, and how games end, with tips for getting the most from the trainer
+- **Progress** — total points, the current level with a meter to the next ceiling, puzzles solved and hints available, all read live from the browser store
+- A light, editorial theme: serif headings, card-based surfaces and a calm navy accent
+
 ### Interface
 - Drag-and-drop **and** tap/click-to-move (works on touch)
 - Legal-move dots, capture rings, last-move and check highlights
@@ -53,7 +59,7 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Promotion picker (with cancel), game-over and new-game dialogs
 - Play as White, Black, or random side; board flip
 - Engine strength is chosen before the game, in the New Game dialog
-- A large board (up to 860px) that scales with the window
+- A large board (up to ~720px) that scales with the window
 - **Game points:** the evaluation of every position you pass through (the same figure as the eval bar) is accumulated live, then settled at the end — a **win multiplies** the total by the level's stake (×5 / ×10 / ×15 / ×20 / ×30) and **always pays positively**, so winning on a negative total flips it positive; a **loss divides** it by the same stake, a **draw leaves it as it is** (×1)
 - Four board themes (Classic, Emerald, Ocean, Midnight)
 - Synthesized sound effects (move, capture, castle, check, game end) via Web Audio
@@ -87,6 +93,7 @@ chess-game/
 ├── js/engine.js            # rules engine + AI + mate search (browser and Node)
 ├── js/puzzles.js           # 20 puzzles in four levels (Chess.com + Lichess + Gardner)
 ├── js/main.js              # UI, drag & drop, clocks, sounds, puzzle trainer
+├── js/shell.js             # sidebar navigation + the Progress dashboard
 ├── tests/engine.test.js    # perft + rules + AI tests
 └── tests/puzzles.test.js   # re-verifies every shipped puzzle
 ```
