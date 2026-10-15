@@ -429,6 +429,65 @@ main {
 .score-value.neg { color: #ff8f8f; }
 .score-mult { font-size: 0.72rem; }
 
+/* highest-score record, under the score board */
+.record-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+}
+.record-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.record-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffd98a;
+  font-variant-numeric: tabular-nums;
+}
+.record-value.pos { color: #7ee08a; }
+.record-value.neg { color: #ff8f8f; }
+.record-by {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.record-by.fresh { color: #ffd98a; }
+.record-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.record-name input {
+  width: 120px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.record-name input:focus { outline: none; border-color: var(--accent); }
+
 /* move list */
 .movelist-box {
   border: 1px solid var(--panel-border);
