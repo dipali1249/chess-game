@@ -29,16 +29,6 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - A level closes once your total reaches its ceiling: **Level 1 at 5000, Level 2 at 10000, Level 3 at 30000, Level 4 at 50000** — Level 5 never closes, so a rising total pushes you up the levels
 - Closed levels are struck through and disabled in the New Game dialog, with a note explaining why; a saved difficulty that has since closed is moved up to the lowest level still open
 
-### Highest score
-
-The best single-game score is kept as **JSON in the browser** (`learnerschess.record`, shaped `{ name, score, date }`) together with the name of whoever set it, and shown under the score board.
-
-- Type your name in the **Your name** field. It is remembered and attached to any record you set; leave it blank and the record reads "Anonymous".
-- A finished game that beats the record **replaces it outright** — the previous record is gone rather than kept in a list — and the panel reads "New record" for that game.
-- The score recorded is the settled **game score** for that match (the same figure the game-over dialog shows), not the running total points.
-
-Because the page is static, this record lives in the browser it was set in — it is not a shared, server-side high-score table. A shared one would need a backend.
-
 ### Puzzle training (earn your hints)
 - **20 puzzles in four levels, five per level** — every one a real position with a solution line, taken from [Chess.com](https://www.chess.com/daily)'s daily puzzles, [Lichess](https://lichess.org/training)'s openly licensed (CC0) puzzle set, and two classics from the connected knowledge base (Martin Gardner's chess chapter). Nothing is generated locally, and there are no multiple-choice questions.
 - **A level unlocks as the match develops**, and when several are open the highest is used first:
@@ -69,6 +59,12 @@ Because the page is static, this record lives in the browser it was set in — i
 - Synthesized sound effects (move, capture, castle, check, game end) via Web Audio
 - Fully responsive layout for phones and desktops
 
+### High score
+- The highest **Total points** figure ever reached is kept as a record, together with the name of whoever set it
+- A new best **replaces (resets)** the old record to the new holder, and asks the player for a name
+- The record shows as **Best score** in the panel, with the top scorer's name on the line beneath it
+- It is stored in `data/highscore.json` in this repository and updated through the small backend in `server/`; when no backend is reachable the same record is cached in the browser, so the feature still works
+
 ### Time bonuses
 
 Both sides start with 10 minutes. As the game goes on the clock is topped up
@@ -96,9 +92,13 @@ chess-game/
 ├── css/style.css           # all styling and themes
 ├── js/engine.js            # rules engine + AI + mate search (browser and Node)
 ├── js/puzzles.js           # 20 puzzles in four levels (Chess.com + Lichess + Gardner)
+├── js/highscore.js         # high-score record helpers (browser, backend and Node)
 ├── js/main.js              # UI, drag & drop, clocks, sounds, puzzle trainer
+├── data/highscore.json     # the high-score record, committed by the backend
+├── server/server.js        # zero-dependency backend: serves the game + the high-score API
 ├── tests/engine.test.js    # perft + rules + AI tests
-└── tests/puzzles.test.js   # re-verifies every shipped puzzle
+├── tests/puzzles.test.js   # re-verifies every shipped puzzle
+└── tests/highscore.test.js # high-score record logic
 ```
 
 ## Run the tests
@@ -106,7 +106,28 @@ chess-game/
 ```bash
 node tests/engine.test.js
 node tests/puzzles.test.js
+node tests/highscore.test.js
 ```
+
+## Run the high-score backend
+
+The game plays fine as a static site, but recording the high score into
+`data/highscore.json` needs the little backend in `server/` (zero dependencies —
+Node built-ins only):
+
+```bash
+GITHUB_TOKEN=<a repo-scoped token> node server/server.js
+```
+
+Then open `http://localhost:8080`. The server serves the game and exposes:
+
+- `GET  /api/highscore` — the current record `{ name, score, updated }`
+- `POST /api/highscore` — `{ name, score }`, stored only when it beats the record
+
+With `GITHUB_TOKEN` set, the record is committed to this repository through the
+GitHub Contents API (the token needs **Contents: read and write** on the repo);
+without it the server runs in local mode and reads/writes the file on disk.
+Configuration lives in the environment — see `.env.example`. **Never commit a token.**
 
 ## Tech notes
 
@@ -114,7 +135,6 @@ node tests/puzzles.test.js
 - The engine module is UMD-style: the same file powers the browser game and the Node test suite.
 - Every puzzle is a real position with a solution line — from Chess.com's daily puzzle feed, Lichess's CC0 puzzle set, and the connected knowledge base (Martin Gardner's chess chapter) — and every line is replayed by `tests/puzzles.test.js` on each run.
 - The game-point maths lives in the engine as `Chess.Scoring` (`levelMultiplier(level)`, `finalScore(accumulated, outcome, level)`), and so does the puzzle-level rule (`puzzleLevelsAvailable(state, color)` / `puzzleLevel(state, color)`), so both are unit-tested rather than buried in the UI.
-- The highest-score record is a small JSON object in browser storage (`learnerschess.record`), not a file on disk: a static page cannot write files, and a record shared between players would need a backend.
 - One Gardner problem (Fabel's "Don't Mate in One") could not be reconstructed faithfully from the source figure and was left out rather than guessed at.
 
 ## License

@@ -3,16 +3,18 @@
   'use strict';
 
   const C = window.Chess;
+  const HS = window.HighScore;
+  const HIGHSCORE_KEY = 'learnerschess.highscore';
+  const HIGHSCORE_API = window.HIGHSCORE_API || '/api/highscore';
   const GLYPH = { 1: '\u265F', 2: '\u265E', 3: '\u265D', 4: '\u265C', 5: '\u265B', 6: '\u265A' };
   const PIECE_NAME = { 1: 'pawn', 2: 'knight', 3: 'bishop', 4: 'rook', 5: 'queen', 6: 'king' };
   const VALS = { 1: 1, 2: 3, 3: 3, 4: 5, 5: 9, 6: 0 };
   const CAP_ORDER = [5, 4, 3, 2, 1];        // captured material, highest value first
   const PIECE_WORD = { 1: 'pawn', 2: 'knight', 3: 'bishop', 4: 'rook', 5: 'queen' };
 
-  // ---- storage keys (everything lives in this browser) ----
+  // ---- progress storage (saved in this browser) ----
   const PROGRESS_KEY = 'learnerschess.progress';
   const LEGACY_PROGRESS_KEY = 'royalchess.progress';   // carried over once, from before the rename
-  const RECORD_KEY = 'learnerschess.record';           // JSON: { name, score, date }
 
   const $ = (id) => document.getElementById(id);
   const boardEl = $('board');
@@ -64,9 +66,8 @@
   const btnPuzzles = $('btn-puzzles');
   const hintCreditsEl = $('hint-credits');
   const puzzlePanelProgress = $('puzzle-panel-progress');
-  const recordScoreEl = $('record-score');
-  const recordByEl = $('record-by');
-  const nameInput = $('name-input');
+  const bestScoreEl = $('best-score');
+  const bestNameEl = $('best-name');
 
   // ---------- state ----------
   let game = new C.Game();
@@ -89,8 +90,8 @@
   let pendingPromo = null;
   let audioCtx = null;
   let mateKey = null, mateVal = 0;   // cached per position: mateIn is a real search
-  let playerName = '';               // the name attached to a new record
-  let record = null;                 // { name, score, date } — the best single game so far
+  let highScore = HS.emptyRecord();  // the record: highest Total points + who set it
+  let highScoreOnline = false;       // the backend answered, so its copy is the source of truth
 
   // ---- puzzle trainer state ----
   const PUZZLES = window.CHESS_PUZZLES || [];
@@ -119,11 +120,9 @@
     buildBoard();
     bindEvents();
     loadProgress();
-    loadRecord();
+    loadHighScore();
     markDifficultyButtons();
     updateHintUI();
-    updateRecordUI();
-    nameInput.value = playerName;
     openModal(newgameModal);
     newGame(1, difficulty);
   }
@@ -692,7 +691,7 @@
       totalPoints += final;
       saveProgress();
       updateScoreUI();
-      checkRecord(final);               // a new best single-game score replaces the record
+      maybeRecordHighScore();
     }
     const how = outcome > 0
       ? 'accumulated ' + fmtPts(gamePoints) + ' \u00d7' + m + ' for the win'
@@ -795,7 +794,6 @@
         currentIndex = p.currentIndex || 0;
         difficulty = p.difficulty || 3;
         totalPoints = p.totalPoints || 0;
-        playerName = p.name || '';
       }
     } catch (e) { /* storage unavailable */ }
     if (!C.Scoring.levelPlayable(difficulty, totalPoints)) {
@@ -807,70 +805,84 @@
     try {
       window.localStorage.setItem(PROGRESS_KEY, JSON.stringify({
         hintCredits: hintCredits, solvedIds: solvedIds, currentIndex: currentIndex,
-        difficulty: difficulty, totalPoints: totalPoints, name: playerName
+        difficulty: difficulty, totalPoints: totalPoints
       }));
     } catch (e) { /* ignore */ }
   }
 
-  // ---------- highest-score record ----------
-  // One record, kept as JSON in this browser: the best single-game score and the
-  // name of whoever set it. A new best replaces it outright, so the old record is
-  // gone — it is not a running list of scores.
-  function loadRecord() {
+  // ---------- high score (highest Total points, kept in the repo) ----------
+  // The record lives in data/highscore.json in the repository, reached through the
+  // small backend at HIGHSCORE_API. When that is unreachable (the game opened straight
+  // from disk, or hosted without the server) the same record is cached in this browser
+  // so the feature still works.
+  function loadHighScore() {
     try {
-      const raw = window.localStorage.getItem(RECORD_KEY);
-      const r = raw ? JSON.parse(raw) : null;
-      record = (r && typeof r.score === 'number' && typeof r.name === 'string') ? r : null;
-    } catch (e) { record = null; }
+      const raw = window.localStorage.getItem(HIGHSCORE_KEY);
+      if (raw) {
+        const r = JSON.parse(raw);
+        if (HS.isValidRecord(r)) highScore = { name: r.name || null, score: r.score, updated: r.updated || null };
+      }
+    } catch (e) { /* ignore */ }
+    renderHighScore();
+    fetch(HIGHSCORE_API, { headers: { Accept: 'application/json' } })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('bad status'))))
+      .then((data) => {
+        highScoreOnline = true;
+        const r = data && data.record;
+        highScore = HS.isValidRecord(r)
+          ? { name: r.name || null, score: r.score, updated: r.updated || null }
+          : HS.emptyRecord();
+        saveHighScoreLocal();
+        renderHighScore();
+      })
+      .catch(() => { highScoreOnline = false; });
   }
 
-  function saveRecord() {
-    try { window.localStorage.setItem(RECORD_KEY, JSON.stringify(record)); }
-    catch (e) { /* ignore */ }
+  function saveHighScoreLocal() {
+    try { window.localStorage.setItem(HIGHSCORE_KEY, JSON.stringify(highScore)); } catch (e) { /* ignore */ }
   }
 
-  function updateRecordUI() {
-    if (!record) {
-      recordScoreEl.textContent = '\u2014';
-      recordScoreEl.className = 'record-value';
-      recordByEl.textContent = 'No record yet';
-      recordByEl.className = 'record-by';
-      recordByEl.title = '';
-      return;
+  function renderHighScore() {
+    if (HS.isValidRecord(highScore)) {
+      bestScoreEl.textContent = fmtPts(highScore.score);
+      bestScoreEl.classList.toggle('pos', highScore.score > 0.049);
+      bestScoreEl.classList.toggle('neg', highScore.score < -0.049);
+      bestNameEl.textContent = highScore.name || 'Anonymous';
+    } else {
+      bestScoreEl.textContent = '\u2014';
+      bestScoreEl.classList.remove('pos', 'neg');
+      bestNameEl.textContent = 'no record yet';
     }
-    recordScoreEl.textContent = fmtPts(record.score);
-    recordScoreEl.className = 'record-value' +
-      (record.score > 0.049 ? ' pos' : (record.score < -0.049 ? ' neg' : ''));
-    recordByEl.textContent = 'by ' + record.name;
-    recordByEl.className = 'record-by';
-    recordByEl.title = 'Best single game: ' + fmtPts(record.score) + ' by ' + record.name +
-      (record.date ? ' on ' + record.date : '');
   }
 
-  // a settled game takes the record when it beats it; returns true when it does
-  function checkRecord(final) {
-    if (record && final <= record.score) return false;
-    record = {
-      name: playerName || 'Anonymous',
-      score: final,
-      date: new Date().toISOString().slice(0, 10)
-    };
-    saveRecord();
-    updateRecordUI();
-    recordByEl.textContent = 'New record \u2014 by ' + record.name;
-    recordByEl.className = 'record-by fresh';
-    return true;
-  }
-
-  function setPlayerName(raw) {
-    playerName = String(raw || '').trim().replace(/\s+/g, ' ').slice(0, 16);
-    // a record set before a name was typed adopts it, rather than staying Anonymous
-    if (record && record.name === 'Anonymous' && playerName) {
-      record.name = playerName;
-      saveRecord();
-      updateRecordUI();
-    }
-    saveProgress();
+  // called once a game's score has been banked: if the running total has set a new
+  // record, ask for a name and replace the old record with it
+  function maybeRecordHighScore() {
+    if (!HS.beats(highScore, totalPoints)) return;
+    let name = null;
+    try {
+      name = window.prompt('New high score: ' + fmtPts(totalPoints) + ' total points!\nEnter your name:', '');
+    } catch (e) { name = null; }
+    const next = HS.apply(highScore, name, totalPoints);
+    if (!next) return;
+    highScore = next;
+    saveHighScoreLocal();
+    renderHighScore();
+    if (!highScoreOnline) return;                 // no backend: the local copy stands
+    fetch(HIGHSCORE_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: next.name, score: next.score })
+    })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('bad status'))))
+      .then((data) => {
+        if (data && data.record && HS.isValidRecord(data.record)) {
+          highScore = { name: data.record.name || null, score: data.record.score, updated: data.record.updated || null };
+          saveHighScoreLocal();
+          renderHighScore();
+        }
+      })
+      .catch(() => { highScoreOnline = false; });
   }
 
   // every match ends with a fresh puzzle slate, so the whole set can be worked again
@@ -1418,8 +1430,6 @@
       pendingPromo = null;
       clearSelection();
     });
-
-    nameInput.addEventListener('input', () => setPlayerName(nameInput.value));
 
     const segPlevel = $('seg-plevel');
     if (segPlevel) {
