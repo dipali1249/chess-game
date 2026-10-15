@@ -32,6 +32,7 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 ### Hints, earned from the game
 - The **Hint** button costs one hint credit and highlights the engine's suggested move on the board
 - **A hint is earned each time the match reaches a situation that unlocks a puzzle level** — the queens exchanged, two pawns down (or worse) in material, or your king in check — once per situation per match, with a short flash on the panel when it happens
+- **A settled game also pays hints by result** — a win adds **3**, a draw adds **1**, and a loss takes **2** away (hints never drop below zero); the game-over dialog shows the change
 - Hints reset at the start of every match
 - The **Puzzles** button (and the Progress view) opens the puzzle trainer, which lives in its own repository: [learners-chess-puzzles](https://github.com/dipali1249/learners-chess-puzzles) — 20 puzzles in four levels, live at [dipali1249.github.io/learners-chess-puzzles](https://dipali1249.github.io/learners-chess-puzzles/)
 

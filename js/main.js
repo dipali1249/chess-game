@@ -651,19 +651,26 @@
     const m = C.Scoring.levelMultiplier(difficulty);
     const outcome = over.result === 0 ? 0 : (over.result === playerColor ? 1 : -1);
     const final = C.Scoring.finalScore(gamePoints, outcome, difficulty);
+    const hintDelta = outcome > 0 ? 3 : outcome === 0 ? 1 : -2;   // win +3, draw +1, loss -2
     if (!gameSettled) {                 // bank this game's score once
       gameSettled = true;
       totalPoints += final;
+      hintCredits = Math.max(0, hintCredits + hintDelta);   // hints never drop below zero
       saveProgress();
       updateScoreUI();
+      updateHintUI();
     }
     const how = outcome > 0
       ? 'accumulated ' + fmtPts(gamePoints) + ' \u00d7' + m + ' for the win'
       : outcome < 0
         ? 'accumulated ' + fmtPts(gamePoints) + ' \u00f7' + m + ' for the loss'
         : 'accumulated ' + fmtPts(gamePoints) + ' \u00d71 for the draw';
+    const hintText = (hintDelta > 0 ? '+' : '') + hintDelta +
+      (Math.abs(hintDelta) === 1 ? ' hint' : ' hints') +
+      ' for the ' + (outcome > 0 ? 'win' : outcome < 0 ? 'loss' : 'draw');
     gameoverScoreEl.innerHTML = '<span class="final">' + fmtPts(final) + ' game points</span>' +
-      '<span class="detail">' + how + '</span>';
+      '<span class="detail">' + how + '</span>' +
+      '<span class="detail">' + hintText + '</span>';
   }
 
   function finishGame() {
