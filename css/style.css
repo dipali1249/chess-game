@@ -360,7 +360,6 @@ footer {
 }
 
 .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.controls #btn-puzzles { grid-column: 1 / -1; }
 
 .btn {
   padding: 9px 12px;

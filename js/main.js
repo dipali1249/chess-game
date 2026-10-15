@@ -12,7 +12,6 @@
   // ---- progress storage (saved in this browser) ----
   const PROGRESS_KEY = 'learnerschess.progress';
   const LEGACY_PROGRESS_KEY = 'royalchess.progress';   // carried over once, from before the rename
-  const PUZZLES_URL = window.PUZZLES_URL || 'https://dipali1249.github.io/learners-chess-puzzles/';
 
   const $ = (id) => document.getElementById(id);
   const boardEl = $('board');
@@ -49,7 +48,6 @@
   const newgameModal = $('newgame-modal');
   const segColor = $('seg-color');
   const segDiff = $('seg-diff');
-  const btnPuzzles = $('btn-puzzles');
   const hintCreditsEl = $('hint-credits');
 
   // ---------- state ----------
@@ -802,7 +800,7 @@
   }
 
   // ---------- hints from puzzle situations ----------
-  // The puzzle set lives in its own repository now (see PUZZLES_URL). A hint is
+  // The puzzle set lives in its own repository now. A hint is
   // earned each time the match reaches a situation that unlocks a puzzle level —
   // the queens exchanged, two pawns down, or the king in check — once per level
   // per match. Level 1 is the base level, so it does not pay.
@@ -827,11 +825,6 @@
     badge.textContent = '+1 hint \u2014 ' + label;
     panel.appendChild(badge);
     setTimeout(() => badge.remove(), 2600);
-  }
-
-  // the puzzle trainer is its own site now
-  function openPuzzles() {
-    window.open(PUZZLES_URL, '_blank', 'noopener');
   }
 
   // ---------- events ----------
@@ -916,8 +909,6 @@
       pendingPromo = null;
       clearSelection();
     });
-
-    btnPuzzles.addEventListener('click', openPuzzles);
 
     $('btn-rematch').addEventListener('click', () => {
       closeModal(gameoverModal);
