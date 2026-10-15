@@ -29,6 +29,16 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - A level closes once your total reaches its ceiling: **Level 1 at 5000, Level 2 at 10000, Level 3 at 30000, Level 4 at 50000** — Level 5 never closes, so a rising total pushes you up the levels
 - Closed levels are struck through and disabled in the New Game dialog, with a note explaining why; a saved difficulty that has since closed is moved up to the lowest level still open
 
+### Highest score
+
+The best single-game score is kept as **JSON in the browser** (`learnerschess.record`, shaped `{ name, score, date }`) together with the name of whoever set it, and shown under the score board.
+
+- Type your name in the **Your name** field. It is remembered and attached to any record you set; leave it blank and the record reads "Anonymous".
+- A finished game that beats the record **replaces it outright** — the previous record is gone rather than kept in a list — and the panel reads "New record" for that game.
+- The score recorded is the settled **game score** for that match (the same figure the game-over dialog shows), not the running total points.
+
+Because the page is static, this record lives in the browser it was set in — it is not a shared, server-side high-score table. A shared one would need a backend.
+
 ### Puzzle training (earn your hints)
 - **20 puzzles in four levels, five per level** — every one a real position with a solution line, taken from [Chess.com](https://www.chess.com/daily)'s daily puzzles, [Lichess](https://lichess.org/training)'s openly licensed (CC0) puzzle set, and two classics from the connected knowledge base (Martin Gardner's chess chapter). Nothing is generated locally, and there are no multiple-choice questions.
 - **A level unlocks as the match develops**, and when several are open the highest is used first:
@@ -104,6 +114,7 @@ node tests/puzzles.test.js
 - The engine module is UMD-style: the same file powers the browser game and the Node test suite.
 - Every puzzle is a real position with a solution line — from Chess.com's daily puzzle feed, Lichess's CC0 puzzle set, and the connected knowledge base (Martin Gardner's chess chapter) — and every line is replayed by `tests/puzzles.test.js` on each run.
 - The game-point maths lives in the engine as `Chess.Scoring` (`levelMultiplier(level)`, `finalScore(accumulated, outcome, level)`), and so does the puzzle-level rule (`puzzleLevelsAvailable(state, color)` / `puzzleLevel(state, color)`), so both are unit-tested rather than buried in the UI.
+- The highest-score record is a small JSON object in browser storage (`learnerschess.record`), not a file on disk: a static page cannot write files, and a record shared between players would need a backend.
 - One Gardner problem (Fabel's "Don't Mate in One") could not be reconstructed faithfully from the source figure and was left out rather than guessed at.
 
 ## License
