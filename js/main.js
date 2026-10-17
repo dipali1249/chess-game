@@ -74,6 +74,15 @@
   let pendingPromo = null;
   let audioCtx = null;
   let mateKey = null, mateVal = 0;   // cached per position: mateIn is a real search
+  let matePendingKey = null, mateTimer = 0;   // the deferred deep mate probe
+  // ---- incremental rendering: only the parts that changed are touched ----
+  let pieceEls = new Array(64);      // the .piece element drawn on each square
+  let pieceVals = new Array(64);     // the piece code drawn on each square
+  let litSquares = [];               // squares carrying highlight classes
+  let movableSquares = [];           // squares carrying data-movable
+  let renderedPlies = 0;             // plies already in the move list
+  let lastMoveRow = null, lastMoveCell = null, activeMoveCell = null;
+  let capturedAt = -1;               // history length the captured strips were drawn for
 
   // ---- hints (earned when a puzzle situation arises) ----
   let hintCredits = 0;
@@ -106,6 +115,10 @@
   function buildBoard() {
     boardEl.innerHTML = '';
     sqEls = new Array(64);
+    pieceEls = new Array(64);
+    pieceVals = new Array(64);
+    litSquares = [];
+    movableSquares = [];
     for (let v = 0; v < 64; v++) {
       const sq = flipped ? 63 - v : v;
       const row = v >> 3, col = v & 7;
@@ -136,82 +149,120 @@
     const rect = boardEl.getBoundingClientRect();
     if (rect.width > 0) boardEl.style.fontSize = (rect.width / 8) * 0.78 + 'px';
   }
-  window.addEventListener('resize', resizeBoard);
+  // Resizing can fire many times a frame; do the measuring work once per frame.
+  let resizeQueued = false;
+  function queueResize() {
+    if (resizeQueued) return;
+    resizeQueued = true;
+    requestAnimationFrame(() => { resizeQueued = false; resizeBoard(); });
+  }
+  window.addEventListener('resize', queueResize);
 
   // ---------- rendering ----------
+  // Piece elements are reused: a normal move rewrites the two or three squares that
+  // actually changed instead of destroying and rebuilding all 64.
   function renderPieces() {
     const b = game.state.board;
     for (let sq = 0; sq < 64; sq++) {
-      const el = sqEls[sq];
-      const old = el.querySelector('.piece');
-      if (old) old.remove();
       const p = b[sq];
-      if (p) {
-        const s = document.createElement('span');
-        s.className = 'piece ' + (p > 0 ? 'white' : 'black');
-        s.textContent = GLYPH[Math.abs(p)];
-        el.appendChild(s);
+      if (p === pieceVals[sq]) continue;
+      pieceVals[sq] = p;
+      let el = pieceEls[sq];
+      if (!p) {
+        if (el) { el.remove(); pieceEls[sq] = null; }
+        continue;
       }
+      if (!el) {
+        el = document.createElement('span');
+        sqEls[sq].appendChild(el);
+        pieceEls[sq] = el;
+      }
+      el.className = 'piece ' + (p > 0 ? 'white' : 'black');
+      el.textContent = GLYPH[Math.abs(p)];
     }
   }
 
+  // Clear only the squares lit last time, then light the new set.
   function renderHighlights() {
-    for (let sq = 0; sq < 64; sq++) {
-      const el = sqEls[sq];
-      el.classList.remove('last-from', 'last-to', 'selected', 'check', 'dot', 'capturable', 'hint-from', 'hint-to');
-      el.removeAttribute('data-movable');
+    for (const sq of litSquares) {
+      sqEls[sq].classList.remove('last-from', 'last-to', 'selected', 'check', 'dot', 'capturable', 'hint-from', 'hint-to');
     }
+    for (const sq of movableSquares) sqEls[sq].removeAttribute('data-movable');
+    const lit = [];
     const hist = game.state.history;
     if (hist.length) {
       const last = hist[hist.length - 1].move;
-      sqEls[last.from].classList.add('last-from');
-      sqEls[last.to].classList.add('last-to');
+      sqEls[last.from].classList.add('last-from'); lit.push(last.from);
+      sqEls[last.to].classList.add('last-to'); lit.push(last.to);
     }
     if (selected >= 0) {
-      sqEls[selected].classList.add('selected');
+      sqEls[selected].classList.add('selected'); lit.push(selected);
       for (const m of selectedMoves) {
         sqEls[m.to].classList.add(m.captured || m.flags === 'e' ? 'capturable' : 'dot');
+        lit.push(m.to);
       }
     }
     if (hint) {
-      sqEls[hint.from].classList.add('hint-from');
-      sqEls[hint.to].classList.add('hint-to');
+      sqEls[hint.from].classList.add('hint-from'); lit.push(hint.from);
+      sqEls[hint.to].classList.add('hint-to'); lit.push(hint.to);
     }
     if (!over && game.inCheck()) {
-      sqEls[game.state.kings[game.state.turn > 0 ? 0 : 1]].classList.add('check');
+      const k = game.state.kings[game.state.turn > 0 ? 0 : 1];
+      sqEls[k].classList.add('check'); lit.push(k);
     }
-    // cursor affordance for own movable pieces
+    litSquares = lit;
+    // cursor affordance for own movable pieces (one write per square)
+    movableSquares = [];
     if (!over && !thinking && game.state.turn === playerColor) {
-      for (const m of game.moves()) sqEls[m.from].setAttribute('data-movable', '1');
+      const seen = {};
+      for (const m of game.moves()) {
+        if (seen[m.from]) continue;
+        seen[m.from] = 1;
+        sqEls[m.from].setAttribute('data-movable', '1');
+        movableSquares.push(m.from);
+      }
     }
   }
 
+  // The list is appended to, not rebuilt: a move adds one cell (or one row).
   function renderMoveList() {
     const hist = game.state.history;
-    movelistEl.innerHTML = '';
+    if (hist.length < renderedPlies) {          // an undo took moves back: start over
+      movelistEl.innerHTML = '';
+      renderedPlies = 0;
+      lastMoveRow = lastMoveCell = activeMoveCell = null;
+    }
     if (!hist.length) {
-      movelistEl.innerHTML = '<div class="empty">No moves yet</div>';
+      if (renderedPlies === 0 && !movelistEl.firstChild) {
+        movelistEl.innerHTML = '<div class="empty">No moves yet</div>';
+      }
       return;
     }
-    const frag = document.createDocumentFragment();
-    for (let i = 0; i < hist.length; i += 2) {
-      const row = document.createElement('div');
-      row.className = 'mv-row';
-      const no = document.createElement('div');
-      no.className = 'mv-no';
-      no.textContent = (i / 2 + 1) + '.';
-      const w = document.createElement('div');
-      w.className = 'mv-san';
-      w.textContent = hist[i].move.san;
-      const b = document.createElement('div');
-      b.className = 'mv-san';
-      if (hist[i + 1]) b.textContent = hist[i + 1].move.san;
-      if (i === hist.length - 1) w.classList.add('active');
-      if (i + 1 === hist.length - 1) b.classList.add('active');
-      row.append(no, w, b);
-      frag.appendChild(row);
+    if (renderedPlies === 0 && movelistEl.firstChild) movelistEl.innerHTML = '';
+    for (let i = renderedPlies; i < hist.length; i++) {
+      if (i % 2 === 0) {
+        const row = document.createElement('div');
+        row.className = 'mv-row';
+        const no = document.createElement('div');
+        no.className = 'mv-no';
+        no.textContent = (i / 2 + 1) + '.';
+        const w = document.createElement('div');
+        w.className = 'mv-san';
+        w.textContent = hist[i].move.san;
+        const b = document.createElement('div');
+        b.className = 'mv-san';
+        row.append(no, w, b);
+        movelistEl.appendChild(row);
+        lastMoveRow = row;
+        lastMoveCell = b;
+      } else {
+        lastMoveCell.textContent = hist[i].move.san;
+      }
     }
-    movelistEl.appendChild(frag);
+    if (activeMoveCell) activeMoveCell.classList.remove('active');
+    activeMoveCell = (hist.length % 2 === 1) ? lastMoveRow.children[1] : lastMoveCell;
+    activeMoveCell.classList.add('active');
+    renderedPlies = hist.length;
     movelistEl.scrollTop = movelistEl.scrollHeight;
   }
 
@@ -240,6 +291,8 @@
 
   function renderCaptured() {
     const hist = game.state.history;
+    if (hist.length === capturedAt) return;    // nothing has changed since the last draw
+    capturedAt = hist.length;
     const byWhite = {}, byBlack = {};
     let matW = 0, matB = 0;
     for (const h of hist) {
@@ -265,20 +318,44 @@
   // The bar reads the way a board does: a white fill for White's share of the
   // position on a dark track for Black's, with a tick at the halfway mark. The
   // number and the verdict are from the player's side, and a forced mate overrides
-  // the material count. The mate search is cached per position (see mateKey above).
-  function whiteMateIn2(st, key) {
+  // the material count.
+  //
+  // The mate probe is the one costly part of the bar: a mate-in-two search costs
+  // ~12 ms against ~0.7 ms for a mate-in-one. So the cheap pass runs inline and the
+  // deep pass is queued for idle time, where it cannot stall a move's paint.
+  function mateValue(st, key) {
     if (key === mateKey) return mateVal;
-    const n = C.AI.mateIn(st, 2);              // mate for whoever is to move
-    mateVal = n ? n * (st.turn === 1 ? 1 : -1) : 0;
+    const quick = C.AI.mateIn(st, 1);
+    mateVal = quick ? quick * (st.turn === 1 ? 1 : -1) : 0;
     mateKey = key;
+    if (!quick) scheduleDeepMate(key);
     return mateVal;
+  }
+
+  function scheduleDeepMate(key) {
+    matePendingKey = key;
+    if (mateTimer) return;
+    const run = () => {
+      mateTimer = 0;
+      const k = matePendingKey;
+      matePendingKey = null;
+      if (k !== game.fen()) return;            // the game has moved on: the answer is stale
+      const g = new C.Game(k);
+      const n = C.AI.mateIn(g.state, 2);
+      mateKey = k;
+      mateVal = n ? n * (g.state.turn === 1 ? 1 : -1) : 0;
+      if (n) renderEval();                     // redraw only when a mate was actually found
+    };
+    mateTimer = window.requestIdleCallback
+      ? window.requestIdleCallback(run, { timeout: 400 })
+      : setTimeout(run, 60);
   }
 
   function renderEval() {
     const st = game.state;
     if (over) {                                // settled: show the result, not the count
       if (over.result === 0) {
-        evalFillEl.style.width = '50%';
+        evalFillEl.style.transform = 'scaleX(0.5)';
         evalFillEl.classList.remove('mate');
         evalTextEl.textContent = '\u00bd';
         evalVerdictEl.textContent = 'Draw';
@@ -288,7 +365,7 @@
       }
       const whiteWon = over.result === 1;
       const iWon = over.result === playerColor;
-      evalFillEl.style.width = whiteWon ? '100%' : '0%';
+      evalFillEl.style.transform = 'scaleX(' + (whiteWon ? 1 : 0) + ')';
       evalFillEl.classList.add('mate');
       evalTextEl.textContent = whiteWon ? '1-0' : '0-1';
       evalVerdictEl.textContent = iWon ? 'You won' : 'Engine won';
@@ -298,15 +375,16 @@
     }
     const white = C.AI.evaluate(st);           // centipawns, White's point of view
     const mine = white * playerColor;          // ... and from the player's side
-    const mateWhite = whiteMateIn2(st, game.fen());
+    const mateWhite = mateValue(st, game.fen());
     const mateMine = mateWhite * playerColor;
     const share = mateWhite ? (mateWhite > 0 ? 100 : 0)
       : 50 + Math.max(-1000, Math.min(1000, white)) / 20;
-    evalFillEl.style.width = Math.max(0, Math.min(100, share)) + '%';
+    const fill = 'scaleX(' + Math.max(0, Math.min(100, share)) / 100 + ')';
+    if (evalFillEl.style.transform !== fill) evalFillEl.style.transform = fill;
     evalFillEl.classList.toggle('mate', !!mateWhite);
     const p = mine / 100;
     const shown = mateWhite ? '#' + Math.abs(mateWhite) : (mine >= 0 ? '+' : '') + p.toFixed(1);
-    evalTextEl.textContent = shown;
+    setText(evalTextEl, shown);
     let verdict, cls;
     if (mateMine) { verdict = mateMine > 0 ? 'Mate for you' : 'Mate for the engine'; cls = 'mate'; }
     else if (p >= 5) { verdict = 'You are winning'; cls = 'good'; }
@@ -316,28 +394,35 @@
     else if (p <= -2) { verdict = 'Engine is better'; cls = 'bad'; }
     else if (p < -0.4) { verdict = 'Engine is slightly better'; cls = 'bad'; }
     else { verdict = 'Level'; cls = ''; }
-    evalVerdictEl.textContent = verdict;
-    evalVerdictEl.className = 'eval-verdict' + (cls ? ' ' + cls : '');
-    evalWrapEl.title = 'Evaluation ' + shown + ' \u2014 ' + verdict.toLowerCase();
+    setText(evalVerdictEl, verdict);
+    setClass(evalVerdictEl, 'eval-verdict' + (cls ? ' ' + cls : ''));
+    const tip = 'Evaluation ' + shown + ' \u2014 ' + verdict.toLowerCase();
+    if (evalWrapEl.title !== tip) evalWrapEl.title = tip;
   }
 
   // ---------- game points ----------
   function fmtPts(v) { return (v >= 0 ? '+' : '') + v.toFixed(1); }
 
+  // Writing a value that has not changed still churns the DOM (and fires observers),
+  // so every routine write goes through these guards.
+  function setText(el, text) { if (el && el.textContent !== text) el.textContent = text; }
+  function setClass(el, cls) { if (el && el.className !== cls) el.className = cls; }
+  function progressChanged() {
+    try { window.dispatchEvent(new Event('chess-progress')); } catch (e) { /* no listeners */ }
+  }
+
   function updateScoreUI() {
     const m = C.Scoring.levelMultiplier(difficulty);
-    gamePointsEl.textContent = fmtPts(gamePoints);
-    gamePointsEl.classList.toggle('pos', gamePoints > 0.049);
-    gamePointsEl.classList.toggle('neg', gamePoints < -0.049);
-    totalPointsEl.textContent = fmtPts(totalPoints);
-    totalPointsEl.classList.toggle('pos', totalPoints > 0.049);
-    totalPointsEl.classList.toggle('neg', totalPoints < -0.049);
-    scoreMultEl.textContent = 'Win \u00d7' + m + ' \u00b7 Loss \u00f7' + m + ' \u00b7 Draw \u00d71';
+    setText(gamePointsEl, fmtPts(gamePoints));
+    setClass(gamePointsEl, 'score-value' + (gamePoints > 0.049 ? ' pos' : gamePoints < -0.049 ? ' neg' : ''));
+    setText(totalPointsEl, fmtPts(totalPoints));
+    setClass(totalPointsEl, 'score-value' + (totalPoints > 0.049 ? ' pos' : totalPoints < -0.049 ? ' neg' : ''));
+    setText(scoreMultEl, 'Win \u00d7' + m + ' \u00b7 Loss \u00f7' + m + ' \u00b7 Draw \u00d71');
   }
 
   function setClockText(el, text) {
     const span = el.querySelector('.clock-time');
-    if (span) span.textContent = text; else el.textContent = text;
+    setText(span || el, text);
   }
 
   function renderClocks() {
@@ -347,10 +432,9 @@
     setClockText(clockTopEl, fmtClock(top));
     setClockText(clockBottomEl, fmtClock(bottom));
     const active = game.state.turn;
-    clockTopEl.classList.toggle('active', !over && active === topColor && game.state.history.length > 0);
-    clockBottomEl.classList.toggle('active', !over && active === playerColor && game.state.history.length > 0);
-    clockTopEl.classList.toggle('low', top <= 30);
-    clockBottomEl.classList.toggle('low', bottom <= 30);
+    const live = !over && game.state.history.length > 0;
+    setClass(clockTopEl, 'clock' + (live && active === topColor ? ' active' : '') + (top <= 30 ? ' low' : ''));
+    setClass(clockBottomEl, 'clock' + (live && active === playerColor ? ' active' : '') + (bottom <= 30 ? ' low' : ''));
   }
 
   // ---------- time bonuses ----------
@@ -392,29 +476,22 @@
   }
 
   function renderStatus() {
-    statusEl.className = 'status';
     if (over) {
-      statusEl.classList.add('over');
-      if (over.result === 0) {
-        statusEl.textContent = 'Draw ' + reasonLabel(over.reason);
-      } else {
-        const side = over.result === 1 ? 'White' : 'Black';
-        statusEl.textContent = side + ' wins ' + reasonLabel(over.reason);
-      }
+      setClass(statusEl, 'status over');
+      setText(statusEl, over.result === 0
+        ? 'Draw ' + reasonLabel(over.reason)
+        : (over.result === 1 ? 'White' : 'Black') + ' wins ' + reasonLabel(over.reason));
       return;
     }
     if (thinking) {
-      statusEl.classList.add('thinking');
-      statusEl.textContent = 'Engine is thinking';
+      setClass(statusEl, 'status thinking');
+      setText(statusEl, 'Engine is thinking');
       return;
     }
     const side = game.state.turn === 1 ? 'White' : 'Black';
-    if (game.inCheck()) {
-      statusEl.classList.add('check');
-      statusEl.textContent = 'Check \u2014 ' + side + ' must respond';
-    } else {
-      statusEl.textContent = side + ' to move';
-    }
+    const checked = game.inCheck();
+    setClass(statusEl, checked ? 'status check' : 'status');
+    setText(statusEl, checked ? 'Check \u2014 ' + side + ' must respond' : side + ' to move');
   }
 
   function renderButtons() {
@@ -738,7 +815,9 @@
     grantedLevels = {};           // hints are re-earned in each match
     playerMoves = 0;
     undosUsed = 0;
+    capturedAt = -1;
     gameoverScoreEl.innerHTML = '';
+    saveProgress();
     buildBoard();
     updateStrips();
     syncAll();
@@ -759,7 +838,7 @@
 
   // ---------- clock ----------
   setInterval(() => {
-    if (over || !game.state.history.length) return;
+    if (document.hidden || over || !game.state.history.length) return;   // no work in a hidden tab
     const t = game.state.turn;
     const key = String(t);
     clocks[key] = Math.max(0, clocks[key] - 0.25);
@@ -802,6 +881,7 @@
         difficulty: difficulty, totalPoints: totalPoints
       }));
     } catch (e) { /* ignore */ }
+    progressChanged();
   }
 
   function markDifficultyButtons() {
@@ -825,22 +905,22 @@
 
   // the topbar chip names the level being played
   function updateLevelChip() {
-    const chip = $('chip-level');
-    if (chip) chip.textContent = 'Level ' + difficulty + ' \u00b7 ' + C.Scoring.levelName(difficulty);
+    setText($('chip-level'), 'Level ' + difficulty + ' \u00b7 ' + C.Scoring.levelName(difficulty));
   }
 
   // the opening the Masters level is playing (level 6), shown under the board
   function updateOpeningUI() {
     if (!openingLineEl) return;
     const op = difficulty === 6 && !over ? C.Openings.current(game.state) : null;
-    openingLineEl.textContent = op ? 'Opening: ' + op.name : '';
-    openingLineEl.title = op && op.note ? op.note : '';
+    setText(openingLineEl, op ? 'Opening: ' + op.name : '');
+    const note = op && op.note ? op.note : '';
+    if (openingLineEl.title !== note) openingLineEl.title = note;
   }
 
   function updateHintUI() {
-    const word = hintCredits === 1 ? ' hint' : ' hints';
-    hintCreditsEl.textContent = hintCredits + word;
-    btnHint.textContent = 'Hint (' + hintCredits + ')';
+    setText(hintCreditsEl, hintCredits + (hintCredits === 1 ? ' hint' : ' hints'));
+    setText(btnHint, 'Hint (' + hintCredits + ')');
+    progressChanged();
   }
 
   // ---------- hints from puzzle situations ----------

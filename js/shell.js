@@ -54,12 +54,16 @@
   }
 
   function fmtPts(v) { return (v >= 0 ? '+' : '') + (Number(v) || 0).toFixed(1); }
-  function set(id, text) { var el = $(id); if (el) el.textContent = text; }
+  function set(id, text) { var el = $(id); if (el && el.textContent !== text) el.textContent = text; }
+  var lastSig = '';   // nothing is redrawn unless the stored progress actually changed
   function setWidth(id, pct) { var el = $(id); if (el) el.style.width = Math.max(0, Math.min(100, pct)) + '%'; }
 
   function renderProgress() {
     var p = readProgress();
     var total = Number(p.totalPoints) || 0;
+    var sig = total + '|' + (Number(p.hintCredits) || 0) + '|' + (Number(p.difficulty) || 0);
+    if (sig === lastSig) return;      // the values have not moved: nothing to redraw
+    lastSig = sig;
 
     var level = Scoring ? Scoring.lowestPlayableLevel(total) : 1;
     var name = LEVEL_NAMES[level - 1] || '';
@@ -93,14 +97,15 @@
     set('dash-hints', String(Number(p.hintCredits) || 0));
   }
 
-  // keep the shell in step with the live scoreboard the game updates
-  if (window.MutationObserver) {
-    ['total-points', 'hint-credits'].forEach(function (id) {
-      var el = $(id);
-      if (!el) return;
-      new MutationObserver(renderProgress).observe(el, { childList: true, characterData: true, subtree: true });
-    });
+  // The game raises this event only when the stored progress changes. It is coalesced
+  // into one redraw per frame, so a burst of updates costs a single pass.
+  var progressQueued = false;
+  function queueProgress() {
+    if (progressQueued) return;
+    progressQueued = true;
+    requestAnimationFrame(function () { progressQueued = false; renderProgress(); });
   }
+  window.addEventListener('chess-progress', queueProgress);
 
   renderProgress();
   show('play');

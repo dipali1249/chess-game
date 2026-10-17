@@ -65,6 +65,19 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Synthesized sound effects (move, capture, castle, check, game end) via Web Audio
 - Fully responsive layout for phones and desktops
 
+### Performance
+
+The game is built to stay light on the browser and the device:
+
+- **Incremental rendering** — a move rewrites only the squares, list cells and strips that actually changed; it never rebuilds the board, the move list or the captured strips. Redundant writes are skipped, so a move creates roughly 90% fewer DOM nodes than a plain redraw.
+- **No filters or promoted layers** — the pieces use a text-shadow instead of a `drop-shadow` filter and no longer carry `will-change`, so there are no per-piece offscreen passes or compositor layers.
+- **Highlights are a flat background tint**, not a `100vmax` inset box-shadow.
+- **The evaluation bar animates `transform`**, so its sweep never relayouts the page.
+- **The mate probe is deferred** — the bar's mate search is a real search (~12 ms), so a cheap mate-in-one pass runs inline and the deep pass is queued for idle time.
+- **Idle work is minimal** — the clock rewrites the display only when the second changes, and the timer stops entirely while the tab is hidden.
+- **The shell redraws only when the stored progress changes**, coalesced to one pass per frame.
+- **`prefers-reduced-motion` is honoured** — all animation is switched off when the system asks for less motion.
+
 ### Time bonuses
 
 Both sides start with 10 minutes. As the game goes on the clock is topped up

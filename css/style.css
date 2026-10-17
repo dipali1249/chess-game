@@ -243,7 +243,7 @@ footer {
   background: var(--surface-3);
   border: 1px solid var(--border);
   color: var(--text-dim);
-  transition: all 0.25s;
+  transition: background 0.25s, color 0.25s, border-color 0.25s;
 }
 .clock.active {
   color: #fff;
@@ -294,23 +294,26 @@ footer {
   display: flex; align-items: center; justify-content: center;
   font-size: 1em; line-height: 1;
   pointer-events: none; user-select: none;
-  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.35));
-  will-change: transform;
 }
-.piece.white { color: #fbfbf7; text-shadow: 0 0 2px #000, 0 0 4px rgba(0, 0, 0, 0.6); }
-.piece.black { color: #26242b; text-shadow: 0 0 2px rgba(255, 255, 255, 0.5), 0 0 3px rgba(0, 0, 0, 0.25); }
+/* A text-shadow stands in for a drop-shadow filter: the same lift, far cheaper to paint
+   (a filter forces an offscreen pass for each of the 32 pieces). */
+.piece.white { color: #fbfbf7; text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5), 0 0 2px #000, 0 0 4px rgba(0, 0, 0, 0.6); }
+.piece.black { color: #26242b; text-shadow: 0 2px 3px rgba(0, 0, 0, 0.4), 0 0 2px rgba(255, 255, 255, 0.5), 0 0 3px rgba(0, 0, 0, 0.25); }
 .piece.dragging-origin { opacity: 0.25; }
 .piece.ghost {
   position: fixed; z-index: 200; pointer-events: none;
   filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.55));
   transform: scale(1.08);
+  will-change: transform;   /* only the one element that actually moves */
 }
 
-.square.last-from { box-shadow: inset 0 0 0 100vmax var(--last-from); }
-.square.last-to   { box-shadow: inset 0 0 0 100vmax var(--last-to); }
-.square.selected  { box-shadow: inset 0 0 0 100vmax var(--sel); }
+/* Highlights layer a flat tint over the square's own colour, which paints far more
+   cheaply than a huge inset box-shadow. */
+.square.last-from { background-image: linear-gradient(var(--last-from), var(--last-from)); }
+.square.last-to   { background-image: linear-gradient(var(--last-to), var(--last-to)); }
+.square.selected  { background-image: linear-gradient(var(--sel), var(--sel)); }
 .square.hint-from,
-.square.hint-to   { box-shadow: inset 0 0 0 100vmax var(--hint); }
+.square.hint-to   { background-image: linear-gradient(var(--hint), var(--hint)); }
 
 .square.dot::after {
   content: ""; position: absolute; left: 50%; top: 50%;
@@ -394,9 +397,10 @@ footer {
   overflow: hidden;
 }
 .eval-fill {
-  height: 100%; width: 50%; border-radius: 999px;
+  height: 100%; width: 100%; border-radius: 999px;
   background: linear-gradient(90deg, #e9e9e2, #ffffff);
-  transition: width 0.45s ease;
+  transform: scaleX(0.5); transform-origin: left center;
+  transition: transform 0.45s ease;   /* transform, so the sweep does not relayout the page */
 }
 .eval-fill.mate { box-shadow: 0 0 10px rgba(240, 200, 60, 0.8); }
 .eval-mid {
@@ -501,8 +505,7 @@ footer {
 /* ============ modals ============ */
 .modal {
   position: fixed; inset: 0; z-index: 300;
-  background: rgba(20, 26, 40, 0.45);
-  backdrop-filter: blur(3px);
+  background: rgba(20, 26, 40, 0.55);   /* a plain dim: a backdrop blur is costly to composite */
   display: flex;
   overflow-y: auto;          /* a card taller than the screen can scroll, not clip */
   padding: 22px 14px;
@@ -542,7 +545,13 @@ footer {
 .segmented button {
   border: none; background: transparent; color: var(--text-dim);
   padding: 8px 2px; border-radius: 8px; font-weight: 600; font-size: 0.78rem;
-  cursor: pointer; font-family: inherit; transition: all 0.15s;
+  cursor: pointer; font-family: inherit;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+/* Honour the system setting: no animation at all when the user asks for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 .segmented button:hover:not(:disabled):not(.active) { background: rgba(0, 0, 0, 0.04); }
 .segmented button.active {
