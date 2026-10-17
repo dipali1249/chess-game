@@ -49,6 +49,7 @@
   const segColor = $('seg-color');
   const segDiff = $('seg-diff');
   const hintCreditsEl = $('hint-credits');
+  const openingLineEl = $('opening-line');
 
   // ---------- state ----------
   let game = new C.Game();
@@ -443,6 +444,8 @@
     renderClocks();
     renderStatus();
     renderButtons();
+    updateOpeningUI();
+    updateLevelChip();
   }
 
   // ---------- sounds ----------
@@ -808,14 +811,30 @@
       const lvl = +b.dataset.value;
       const open = C.Scoring.levelPlayable(lvl, totalPoints);
       b.disabled = !open;
-      b.title = open ? '' : 'Closed \u2014 your total points have passed this level';
+      b.title = open ? ''
+        : lvl === 6 ? 'Masters \u2014 opens at 50000 total points'
+          : 'Closed \u2014 your total points have passed this level';
       b.classList.toggle('active', open && lvl === difficulty);
     });
     if (diffNoteEl) {
       diffNoteEl.textContent = 'Total points ' + fmtPts(totalPoints) +
         (lowest > 1 ? ' \u2014 levels 1\u2013' + (lowest - 1) + ' are closed' : '') +
-        '. Levels close at 5000 / 10000 / 30000 / 50000.';
+        '. Levels close at 5000 / 10000 / 30000 / 50000; Masters (level 6) opens at 50000.';
     }
+  }
+
+  // the topbar chip names the level being played
+  function updateLevelChip() {
+    const chip = $('chip-level');
+    if (chip) chip.textContent = 'Level ' + difficulty + ' \u00b7 ' + C.Scoring.levelName(difficulty);
+  }
+
+  // the opening the Masters level is playing (level 6), shown under the board
+  function updateOpeningUI() {
+    if (!openingLineEl) return;
+    const op = difficulty === 6 && !over ? C.Openings.current(game.state) : null;
+    openingLineEl.textContent = op ? 'Opening: ' + op.name : '';
+    openingLineEl.title = op && op.note ? op.note : '';
   }
 
   function updateHintUI() {

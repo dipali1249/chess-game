@@ -148,12 +148,18 @@ console.log('five difficulty levels OK (all return legal moves)');
 
 // ---- game points (Scoring) ----
 const near = (a, b) => Math.abs(a - b) < 1e-9;
-assert.deepStrictEqual(Chess.Scoring.LEVEL_MULTIPLIER, [5, 10, 15, 20, 30]);
-for (let lvl = 1; lvl <= 5; lvl++) {
-  assert.strictEqual(Chess.Scoring.levelMultiplier(lvl), [5, 10, 15, 20, 30][lvl - 1]);
+assert.deepStrictEqual(Chess.Scoring.LEVEL_MULTIPLIER, [5, 10, 15, 20, 30, 40]);
+for (let lvl = 1; lvl <= 6; lvl++) {
+  assert.strictEqual(Chess.Scoring.levelMultiplier(lvl), [5, 10, 15, 20, 30, 40][lvl - 1]);
 }
 assert.strictEqual(Chess.Scoring.levelMultiplier(0), 5);    // clamped low
-assert.strictEqual(Chess.Scoring.levelMultiplier(9), 30);   // clamped high
+assert.strictEqual(Chess.Scoring.levelMultiplier(9), 40);   // clamped high (level 6)
+// level names (used by the topbar chip)
+assert.deepStrictEqual(Chess.Scoring.LEVEL_NAMES,
+  ['Beginner', 'Casual', 'Club', 'Strong', 'Expert', 'Masters']);
+assert.strictEqual(Chess.Scoring.levelName(6), 'Masters');
+assert.strictEqual(Chess.Scoring.levelName(0), 'Beginner');   // clamped
+assert.strictEqual(Chess.Scoring.levelName(9), 'Masters');    // clamped
 // win -> accumulate x stake, loss -> accumulate / stake, draw -> accumulate x 1
 assert.ok(near(Chess.Scoring.finalScore(12.4, 1, 3), 186), 'win multiplies by the level stake (x15)');
 assert.ok(near(Chess.Scoring.finalScore(12.4, -1, 4), 0.62), 'loss divides by the level stake (/20)');
@@ -189,12 +195,17 @@ assert.strictEqual(Chess.Scoring.timeBonus(4, 90), 2700);
 assert.strictEqual(Chess.Scoring.timeBonus(5, 49), 0);
 assert.strictEqual(Chess.Scoring.timeBonus(5, 50), 3000);
 assert.strictEqual(Chess.Scoring.timeBonus(5, 100), 3000);
-// only levels 1 and 5 give the computer a bonus
+// Level 6: +60 min every 60th ply from the start
+assert.strictEqual(Chess.Scoring.timeBonus(6, 59), 0);
+assert.strictEqual(Chess.Scoring.timeBonus(6, 60), 3600);
+assert.strictEqual(Chess.Scoring.timeBonus(6, 120), 3600);
+// only levels 1, 5 and 6 give the computer a bonus
 assert.strictEqual(Chess.Scoring.computerGetsBonus(1), true);
 assert.strictEqual(Chess.Scoring.computerGetsBonus(2), false);
 assert.strictEqual(Chess.Scoring.computerGetsBonus(3), false);
 assert.strictEqual(Chess.Scoring.computerGetsBonus(4), false);
 assert.strictEqual(Chess.Scoring.computerGetsBonus(5), true);
+assert.strictEqual(Chess.Scoring.computerGetsBonus(6), true);
 console.log('time bonuses OK (per-level schedule + computer eligibility)');
 
 // ---- level gating by total game points ----
@@ -210,6 +221,12 @@ assert.strictEqual(Chess.Scoring.levelPlayable(4, 30000), true);
 assert.strictEqual(Chess.Scoring.levelPlayable(4, 50000), false);  // closed at 50000
 assert.strictEqual(Chess.Scoring.levelPlayable(5, 50000), true);   // level 5 never closes
 assert.strictEqual(Chess.Scoring.levelPlayable(5, 1e9), true);
+// level 6 opens at 50000, once levels 1-4 have closed
+assert.deepStrictEqual(Chess.Scoring.LEVEL_OPENS, [0, 0, 0, 0, 0, 0, 50000]);
+assert.strictEqual(Chess.Scoring.levelPlayable(6, 0), false);
+assert.strictEqual(Chess.Scoring.levelPlayable(6, 49999), false);
+assert.strictEqual(Chess.Scoring.levelPlayable(6, 50000), true);
+assert.strictEqual(Chess.Scoring.levelPlayable(6, 1e9), true);
 // the player is pushed to the lowest level still open to them
 assert.strictEqual(Chess.Scoring.lowestPlayableLevel(0), 1);
 assert.strictEqual(Chess.Scoring.lowestPlayableLevel(5000), 2);
@@ -217,7 +234,7 @@ assert.strictEqual(Chess.Scoring.lowestPlayableLevel(10000), 3);
 assert.strictEqual(Chess.Scoring.lowestPlayableLevel(30000), 4);
 assert.strictEqual(Chess.Scoring.lowestPlayableLevel(50000), 5);
 assert.strictEqual(Chess.Scoring.lowestPlayableLevel(99999), 5);
-console.log('level gating OK (ceilings 5000 / 10000 / 30000 / 50000)');
+console.log('level gating OK (ceilings 5000 / 10000 / 30000 / 50000; level 6 opens at 50000)');
 
 // ---- puzzle levels (unlocked by the match situation) ----
 // level 1 is the base level; 2 = queens exchanged, 3 = two pawns down, 4 = king in check
@@ -238,13 +255,13 @@ assert.strictEqual(levelAt('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -
 console.log('puzzle levels OK (opening / queens exchanged / two pawns down / king in check)');
 
 // ---- undo allowance (Scoring) ----
-// Undo is capped at a share of the moves played so far: 50/40/30/20/10% by level.
-assert.deepStrictEqual(Chess.Scoring.UNDO_PERCENT, [0.5, 0.4, 0.3, 0.2, 0.1]);
-for (let lvl = 1; lvl <= 5; lvl++) {
-  assert.strictEqual(Chess.Scoring.undoPercent(lvl), [0.5, 0.4, 0.3, 0.2, 0.1][lvl - 1]);
+// Undo is capped at a share of the moves played so far: 50/40/30/20/10/5% by level.
+assert.deepStrictEqual(Chess.Scoring.UNDO_PERCENT, [0.5, 0.4, 0.3, 0.2, 0.1, 0.05]);
+for (let lvl = 1; lvl <= 6; lvl++) {
+  assert.strictEqual(Chess.Scoring.undoPercent(lvl), [0.5, 0.4, 0.3, 0.2, 0.1, 0.05][lvl - 1]);
 }
 assert.strictEqual(Chess.Scoring.undoPercent(0), 0.5);    // clamped low
-assert.strictEqual(Chess.Scoring.undoPercent(9), 0.1);    // clamped high
+assert.strictEqual(Chess.Scoring.undoPercent(9), 0.05);   // clamped high (level 6)
 assert.strictEqual(Chess.Scoring.undosAllowed(1, 10), 5);
 assert.strictEqual(Chess.Scoring.undosAllowed(2, 10), 4);
 assert.strictEqual(Chess.Scoring.undosAllowed(3, 10), 3);
@@ -253,6 +270,42 @@ assert.strictEqual(Chess.Scoring.undosAllowed(5, 10), 1);
 assert.strictEqual(Chess.Scoring.undosAllowed(1, 1), 0);   // floors down
 assert.strictEqual(Chess.Scoring.undosAllowed(1, 0), 0);
 assert.strictEqual(Chess.Scoring.undosAllowed(1, -3), 0);
-console.log('undo allowance OK (50/40/30/20/10% of the moves played)');
+console.log('undo allowance OK (50/40/30/20/10/5% of the moves played)');
+
+// ---- opening book (level 6) ----
+// Every line must replay legally from the initial position, and the book must
+// offer a legal move from the opening position.
+const OP = Chess.Openings.list;
+assert.ok(Array.isArray(OP) && OP.length >= 10, 'the opening book has entries');
+const openingNames = new Set();
+for (const o of OP) {
+  assert.ok(o.name && o.note, 'opening has a name and a note');
+  assert.ok(!openingNames.has(o.name), 'duplicate opening name ' + o.name);
+  openingNames.add(o.name);
+  const g = new Chess.Game();
+  for (const san of o.moves) {
+    let played = null;
+    for (const m of g.moves()) {
+      g.move(m.from, m.to, m.promotion || 0);
+      const got = g.state.history[g.state.history.length - 1].move.san;
+      g.undo();
+      if (got === san) { played = m; break; }
+    }
+    assert.ok(played, 'illegal SAN ' + san + ' in ' + o.name);
+    g.move(played.from, played.to, played.promotion || 0);
+  }
+}
+// level 6 plays a book move from the opening position, and it is legal
+const startState = new Chess.Game().state;
+const bookMove = Chess.AI.search(startState, 6);
+assert.ok(bookMove, 'level 6 plays a book move from the opening position');
+assert.ok(Chess.generateMoves(startState).some((m) => m.from === bookMove.from && m.to === bookMove.to),
+  'the book move is legal');
+assert.ok(Chess.Openings.current(startState), 'the opening position is named');
+// off the book there is no book move
+const offBook = new Chess.Game('rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R b KQkq - 1 1');
+assert.strictEqual(Chess.Openings.move(offBook.state), null);
+assert.strictEqual(Chess.Openings.current(offBook.state), null);
+console.log('opening book OK (' + OP.length + ' openings, every line legal)');
 
 console.log('\nAll engine tests passed.');

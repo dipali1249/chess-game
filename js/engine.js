@@ -657,13 +657,112 @@
     return 0;
   }
 
+  // ---------- opening book (level 6: the greats) ----------
+  // Famous openings, in SAN from the initial position. At level 6 the engine plays
+  // from this book while the position is still in it, then falls back to a search.
+  // Every line is replayed by tests/engine.test.js, which checks each move is legal.
+  var OPENINGS = [
+    { name: 'Ruy Lopez', note: 'The Spanish \u2014 the classical main line, played at the top for over a century.', moves: ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5', 'a6', 'Ba4', 'Nf6', 'O-O', 'Be7'] },
+    { name: 'Sicilian Defence, Najdorf', note: 'The Najdorf \u2014 the sharp Sicilian favoured by Fischer and Kasparov.', moves: ['e4', 'c5', 'Nf3', 'd6', 'd4', 'cxd4', 'Nxd4', 'Nf6', 'Nc3', 'a6'] },
+    { name: 'Italian Game, Giuoco Piano', note: 'The Giuoco Piano \u2014 the oldest recorded opening, still seen at the top.', moves: ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4', 'Bc5', 'c3', 'Nf6', 'd4'] },
+    { name: 'Two Knights Defence', note: 'The Two Knights \u2014 a sharp favourite of attacking players.', moves: ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4', 'Nf6', 'Ng5', 'd5'] },
+    { name: 'Scotch Game', note: 'The Scotch \u2014 revived by Kasparov to open up 1.e4 e5.', moves: ['e4', 'e5', 'Nf3', 'Nc6', 'd4', 'exd4', 'Nxd4'] },
+    { name: 'Queen\u2019s Gambit Declined', note: 'The QGD \u2014 the backbone of classical chess.', moves: ['d4', 'd5', 'c4', 'e6', 'Nc3', 'Nf6', 'Bg5', 'Be7'] },
+    { name: 'Slav Defence', note: 'The Slav \u2014 a rock-solid answer to the Queen\u2019s Gambit.', moves: ['d4', 'd5', 'c4', 'c6', 'Nf3', 'Nf6', 'Nc3', 'dxc4'] },
+    { name: 'King\u2019s Indian Defence', note: 'The King\u2019s Indian \u2014 Kasparov\u2019s main weapon with Black.', moves: ['d4', 'Nf6', 'c4', 'g6', 'Nc3', 'Bg7', 'e4', 'd6', 'Nf3', 'O-O'] },
+    { name: 'Nimzo-Indian Defence', note: 'The Nimzo-Indian \u2014 named for Nimzowitsch, a positional cornerstone.', moves: ['d4', 'Nf6', 'c4', 'e6', 'Nc3', 'Bb4'] },
+    { name: 'Gr\u00fcnfeld Defence', note: 'The Gr\u00fcnfeld \u2014 Kasparov\u2019s other great counter-attacking choice.', moves: ['d4', 'Nf6', 'c4', 'g6', 'Nc3', 'd5', 'cxd5', 'Nxd5'] },
+    { name: 'Queen\u2019s Indian Defence', note: 'The Queen\u2019s Indian \u2014 a flexible, hypermodern setup.', moves: ['d4', 'Nf6', 'c4', 'e6', 'Nf3', 'b6'] },
+    { name: 'Catalan Opening', note: 'The Catalan \u2014 a long positional squeeze with the fianchettoed bishop.', moves: ['d4', 'Nf6', 'c4', 'e6', 'g3', 'd5', 'Bg2'] },
+    { name: 'French Defence', note: 'The French \u2014 a solid, counter-attacking reply to 1.e4.', moves: ['e4', 'e6', 'd4', 'd5', 'Nc3', 'Nf6'] },
+    { name: 'Caro-Kann Defence', note: 'The Caro-Kann \u2014 a famously solid structure.', moves: ['e4', 'c6', 'd4', 'd5', 'Nc3', 'dxe4', 'Nxe4', 'Bf5'] },
+    { name: 'English Opening', note: 'The English \u2014 a flank opening popular with positional players.', moves: ['c4', 'e5', 'Nc3', 'Nf6', 'Nf3', 'Nc6'] },
+    { name: 'Petrov Defence', note: 'The Petrov \u2014 a solid, symmetrical reply to 1.e4.', moves: ['e4', 'e5', 'Nf3', 'Nf6', 'Nxe5', 'd6'] },
+    { name: 'King\u2019s Gambit Accepted', note: 'The King\u2019s Gambit \u2014 the romantic era\u2019s great attacking try.', moves: ['e4', 'e5', 'f4', 'exf4', 'Nf3'] },
+    { name: 'Pirc Defence', note: 'The Pirc \u2014 a hypermodern defence that invites White forward.', moves: ['e4', 'd6', 'd4', 'Nf6', 'Nc3', 'g6'] }
+  ];
+
+  // play a SAN move on a Game (returns the move, or null when the SAN is not legal)
+  function playSan(g, san) {
+    var ms = g.moves();
+    for (var i = 0; i < ms.length; i++) {
+      var mv = g.move(ms[i].from, ms[i].to, ms[i].promotion || 0);
+      var got = g.state.history[g.state.history.length - 1].move.san;
+      if (got === san) return mv;
+      g.undo();
+    }
+    return null;
+  }
+
+  // position key (board, turn, castling, en passant) — the same for a transposition
+  function positionKey(state) {
+    return stateToFen(state).split(' ').slice(0, 4).join(' ');
+  }
+
+  // the book, keyed by position: replay each line once and remember every stop.
+  // A position can have several candidate moves (shared openings), so each key
+  // holds a list and the engine picks among them, varying its openings.
+  var BOOK = null;
+  function buildBook() {
+    if (BOOK) return BOOK;
+    BOOK = {};
+    for (var i = 0; i < OPENINGS.length; i++) {
+      var o = OPENINGS[i];
+      var g = new Game();
+      for (var j = 0; j < o.moves.length; j++) {
+        var key = positionKey(g.state);
+        if (!BOOK[key]) BOOK[key] = [];
+        BOOK[key].push({ san: o.moves[j], name: o.name, note: o.note });
+        if (!playSan(g, o.moves[j])) break;
+      }
+    }
+    return BOOK;
+  }
+
+  // the book move for this position, or null when the game has left the book
+  function openingMove(state) {
+    var entries = buildBook()[positionKey(state)];
+    if (!entries || !entries.length) return null;
+    var legal = generateMoves(state);
+    var order = entries.slice();
+    for (var s = order.length - 1; s > 0; s--) {   // shuffle, so the opening varies
+      var r = Math.floor(Math.random() * (s + 1));
+      var t = order[s]; order[s] = order[r]; order[r] = t;
+    }
+    for (var i = 0; i < order.length; i++) {
+      for (var j = 0; j < legal.length; j++) {
+        if (moveToSan(state, legal[j], legal) === order[i].san) {
+          state.bookOpening = { name: order[i].name, note: order[i].note };
+          return legal[j];
+        }
+      }
+    }
+    return null;
+  }
+
+  // the opening the current position belongs to, or null
+  function currentOpening(state) {
+    var entries = buildBook()[positionKey(state)];
+    if (!entries || !entries.length) return null;
+    if (state.bookOpening) return state.bookOpening;   // the line the engine is following
+    return { name: entries[0].name, note: entries[0].note };
+  }
+
+  var Openings = {
+    list: OPENINGS,
+    current: currentOpening,
+    move: openingMove
+  };
+
   var AI = {
-    // Five playing strengths: 1 Beginner, 2 Casual, 3 Club, 4 Strong, 5 Expert
+    // Six playing strengths: 1 Beginner, 2 Casual, 3 Club, 4 Strong, 5 Expert,
+    // 6 Masters — follows a great player's opening, then plays at Expert strength
     search: function (state, level) {
       if (level <= 1) return searchRoot(state, 1, 180, true);
       if (level === 2) return searchRoot(state, 2, 70, true);
       if (level === 3) return searchRoot(state, 2, 10, true);
       if (level === 4) return searchRoot(state, 3, 0, true);
+      if (level === 6) return openingMove(state) || searchRoot(state, 4, 0, true);
       return searchRoot(state, 4, 0, true);
     },
     evaluate: evaluate,
@@ -685,13 +784,20 @@
   }
 
   // ---------- game points ----------
-  // Five stake multipliers, one per difficulty level (1 Beginner .. 5 Expert).
-  var LEVEL_MULTIPLIER = [5, 10, 15, 20, 30];
+  // Six stake multipliers, one per difficulty level (1 Beginner .. 6 Masters).
+  var LEVEL_MULTIPLIER = [5, 10, 15, 20, 30, 40];
+
+  // the display name of each difficulty level
+  var LEVEL_NAMES = ['Beginner', 'Casual', 'Club', 'Strong', 'Expert', 'Masters'];
+
+  function levelName(level) {
+    return LEVEL_NAMES[clampLevel(level) - 1];
+  }
 
   function levelMultiplier(level) {
     var n = Math.round(+level) || 1;
     if (n < 1) n = 1;
-    if (n > 5) n = 5;
+    if (n > 6) n = 6;
     return LEVEL_MULTIPLIER[n - 1];
   }
 
@@ -717,13 +823,14 @@
     { every: 5, after: 10, seconds: 600 },    // L2: +10 min every 5th ply after ply 10
     { every: 10, after: 10, seconds: 1800 },  // L3: +30 min every 10th ply after ply 10
     { every: 45, after: 0, seconds: 2700 },   // L4: +45 min every 45th ply
-    { every: 50, after: 0, seconds: 3000 }    // L5: +50 min every 50th ply
+    { every: 50, after: 0, seconds: 3000 },   // L5: +50 min every 50th ply
+    { every: 60, after: 0, seconds: 3600 }    // L6: +60 min every 60th ply
   ];
 
   function clampLevel(level) {
     var n = Math.round(+level) || 1;
     if (n < 1) n = 1;
-    if (n > 5) n = 5;
+    if (n > 6) n = 6;
     return n;
   }
 
@@ -736,16 +843,16 @@
     return r.seconds;
   }
 
-  // the computer only earns bonuses at levels 1 and 5
+  // the computer only earns bonuses at levels 1, 5 and 6
   function computerGetsBonus(level) {
     var n = clampLevel(level);
-    return n === 1 || n === 5;
+    return n === 1 || n === 5 || n === 6;
   }
 
   // ---- undo allowance ----
   // Undo is limited to a share of the moves played so far, tightening with the
-  // difficulty: 50 / 40 / 30 / 20 / 10 % at levels 1-5.
-  var UNDO_PERCENT = [0.5, 0.4, 0.3, 0.2, 0.1];
+  // difficulty: 50 / 40 / 30 / 20 / 10 / 5 % at levels 1-6.
+  var UNDO_PERCENT = [0.5, 0.4, 0.3, 0.2, 0.1, 0.05];
 
   function undoPercent(level) {
     return UNDO_PERCENT[clampLevel(level) - 1];
@@ -761,18 +868,20 @@
   // ---- level gating by total game points ----
   // A level stays open while the player's running total is under its ceiling. Once the
   // total reaches the ceiling the level is closed and the player must move up a level.
-  var LEVEL_CEILING = [0, 5000, 10000, 30000, 50000, Infinity];
+  // Level 6 is the exception: it *opens* at 50000, once levels 1-4 have closed.
+  var LEVEL_CEILING = [0, 5000, 10000, 30000, 50000, Infinity, Infinity];
+  var LEVEL_OPENS = [0, 0, 0, 0, 0, 0, 50000];
 
-  // is `level` still open to a player with `totalPoints`?
+  // is `level` open to a player with `totalPoints`?
   function levelPlayable(level, totalPoints) {
     var n = clampLevel(level);
     var t = +totalPoints || 0;
-    return t < LEVEL_CEILING[n];
+    return t >= LEVEL_OPENS[n] && t < LEVEL_CEILING[n];
   }
 
   // the lowest level still open to that player
   function lowestPlayableLevel(totalPoints) {
-    for (var n = 1; n <= 5; n++) {
+    for (var n = 1; n <= 6; n++) {
       if (levelPlayable(n, totalPoints)) return n;
     }
     return 5;
@@ -822,12 +931,15 @@
     undoPercent: undoPercent,
     undosAllowed: undosAllowed,
     LEVEL_MULTIPLIER: LEVEL_MULTIPLIER,
+    LEVEL_NAMES: LEVEL_NAMES,
+    levelName: levelName,
     TIME_BONUS: TIME_BONUS,
     LEVEL_CEILING: LEVEL_CEILING,
+    LEVEL_OPENS: LEVEL_OPENS,
     UNDO_PERCENT: UNDO_PERCENT
   };
 
-  var Chess = { Game: Game, AI: AI, perft: perft, generateMoves: generateMoves, Scoring: Scoring };
+  var Chess = { Game: Game, AI: AI, Openings: Openings, perft: perft, generateMoves: generateMoves, Scoring: Scoring };
 
   global.Chess = Chess;
   if (typeof module !== 'undefined' && module.exports) module.exports = Chess;

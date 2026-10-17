@@ -10,7 +10,7 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var PROGRESS_KEY = 'learnerschess.progress';
-  var LEVEL_NAMES = ['Beginner', 'Casual', 'Club', 'Strong', 'Expert'];
+  var LEVEL_NAMES = ['Beginner', 'Casual', 'Club', 'Strong', 'Expert', 'Masters'];
 
   var Scoring = (window.Chess && window.Chess.Scoring) || null;
 
@@ -66,9 +66,12 @@
     var ceilings = Scoring ? Scoring.LEVEL_CEILING : null;   // [0, 5000, 10000, 30000, 50000, Infinity]
     var ceiling = ceilings ? ceilings[level] : null;         // ceiling for the current level
 
+    var current = Number(p.difficulty) || 3;            // the level being played
+    var currentName = LEVEL_NAMES[current - 1] || '';
+
     set('side-total', fmtPts(total));
     set('side-level', String(level));
-    set('chip-level', 'Level ' + level + ' \u00b7 ' + name);
+    set('chip-level', 'Level ' + current + ' \u00b7 ' + currentName);
 
     set('dash-total', fmtPts(total));
     set('dash-level', String(level));
@@ -77,7 +80,9 @@
     var note, pct;
     if (ceiling == null || !isFinite(ceiling)) {
       pct = 100;
-      note = 'Level 5 never closes \u2014 keep climbing.';
+      note = total >= 50000
+        ? 'Levels 1\u20134 are closed \u2014 Masters (level 6) is open.'
+        : 'Level 5 never closes \u2014 keep climbing.';
     } else {
       pct = (total / ceiling) * 100;
       note = fmtPts(total) + ' of ' + ceiling.toLocaleString('en-IN') + ' to close level ' + level;
