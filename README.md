@@ -48,7 +48,7 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - A **captured-material strip** under each player: the pieces that side has taken, grouped by piece with a count when there is more than one, highest value first, a green **+n** badge on whoever is ahead on material, and a hover tooltip spelling out the tally and its point value
 - Move list in SAN with auto-scroll
 - 10-minute clocks per side with time-forfeit detection, plus level-based time bonuses (see below)
-- Undo (takes back both your move and the engine's reply)
+- Undo (takes back both your move and the engine's reply), capped at a share of the moves played so far — **50 / 40 / 30 / 20 / 10 %** at levels 1–5
 - Promotion picker (with cancel), game-over and new-game dialogs
 - Play as White, Black, or random side; board flip
 - Engine strength is chosen before the game, in the New Game dialog

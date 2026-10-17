@@ -65,6 +65,8 @@
   let soundOn = true;
   let thinking = false;
   let hint = null;
+  let playerMoves = 0;          // the player's moves this game (the undo budget is a share of these)
+  let undosUsed = 0;            // undos spent this game
   let clocks = { '1': 600, '-1': 600 };
   let sqEls = new Array(64);
   let dragState = null;
@@ -415,8 +417,21 @@
   }
 
   function renderButtons() {
-    btnUndo.disabled = !game.state.history.length || thinking;
+    const allowed = C.Scoring.undosAllowed(difficulty, playerMoves);
+    btnUndo.disabled = !canUndo();
+    btnUndo.title = allowed <= 0
+      ? 'Undo \u2014 play a few moves first'
+      : undosUsed >= allowed
+        ? 'Undo \u2014 no undos left at this level'
+        : 'Undo \u2014 ' + (allowed - undosUsed) + ' left this game';
     btnHint.disabled = !!over || thinking || game.state.turn !== playerColor;
+  }
+
+  // Undo is allowed for a share of the moves played so far, set by the difficulty
+  // (50/40/30/20/10% at levels 1-5).
+  function canUndo() {
+    if (thinking || !game.state.history.length) return false;
+    return undosUsed < C.Scoring.undosAllowed(difficulty, playerMoves);
   }
 
   function syncAll() {
@@ -485,6 +500,7 @@
   function performMove(from, to, promo) {
     const done = game.move(from, to, promo);
     if (!done) return false;
+    if (-game.state.turn === playerColor) playerMoves++;   // the undo budget counts the player's moves
     if (done.flags === 'k' || done.flags === 'q') playSound('castle');
     else if (done.captured) playSound('capture');
     else playSound('move');
@@ -717,6 +733,8 @@
     pointsHistory = [];
     gameSettled = false;
     grantedLevels = {};           // hints are re-earned in each match
+    playerMoves = 0;
+    undosUsed = 0;
     gameoverScoreEl.innerHTML = '';
     buildBoard();
     updateStrips();
@@ -865,7 +883,8 @@
     });
 
     btnUndo.addEventListener('click', () => {
-      if (thinking || !game.state.history.length) return;
+      if (!canUndo()) return;
+      undosUsed++;
       closeModal(gameoverModal);
       closeModal(promotionModal);
       pendingPromo = null;

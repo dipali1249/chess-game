@@ -237,4 +237,22 @@ assert.strictEqual(levelAt('rnbqkbnr/pp1pp1pp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq -
 assert.strictEqual(levelAt('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', 1), 1);
 console.log('puzzle levels OK (opening / queens exchanged / two pawns down / king in check)');
 
+// ---- undo allowance (Scoring) ----
+// Undo is capped at a share of the moves played so far: 50/40/30/20/10% by level.
+assert.deepStrictEqual(Chess.Scoring.UNDO_PERCENT, [0.5, 0.4, 0.3, 0.2, 0.1]);
+for (let lvl = 1; lvl <= 5; lvl++) {
+  assert.strictEqual(Chess.Scoring.undoPercent(lvl), [0.5, 0.4, 0.3, 0.2, 0.1][lvl - 1]);
+}
+assert.strictEqual(Chess.Scoring.undoPercent(0), 0.5);    // clamped low
+assert.strictEqual(Chess.Scoring.undoPercent(9), 0.1);    // clamped high
+assert.strictEqual(Chess.Scoring.undosAllowed(1, 10), 5);
+assert.strictEqual(Chess.Scoring.undosAllowed(2, 10), 4);
+assert.strictEqual(Chess.Scoring.undosAllowed(3, 10), 3);
+assert.strictEqual(Chess.Scoring.undosAllowed(4, 10), 2);
+assert.strictEqual(Chess.Scoring.undosAllowed(5, 10), 1);
+assert.strictEqual(Chess.Scoring.undosAllowed(1, 1), 0);   // floors down
+assert.strictEqual(Chess.Scoring.undosAllowed(1, 0), 0);
+assert.strictEqual(Chess.Scoring.undosAllowed(1, -3), 0);
+console.log('undo allowance OK (50/40/30/20/10% of the moves played)');
+
 console.log('\nAll engine tests passed.');

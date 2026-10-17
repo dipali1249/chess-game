@@ -742,6 +742,22 @@
     return n === 1 || n === 5;
   }
 
+  // ---- undo allowance ----
+  // Undo is limited to a share of the moves played so far, tightening with the
+  // difficulty: 50 / 40 / 30 / 20 / 10 % at levels 1-5.
+  var UNDO_PERCENT = [0.5, 0.4, 0.3, 0.2, 0.1];
+
+  function undoPercent(level) {
+    return UNDO_PERCENT[clampLevel(level) - 1];
+  }
+
+  // how many undos the level allows once `moves` moves have been played
+  function undosAllowed(level, moves) {
+    var m = Math.floor(+moves) || 0;
+    if (m < 0) m = 0;
+    return Math.floor(undoPercent(level) * m);
+  }
+
   // ---- level gating by total game points ----
   // A level stays open while the player's running total is under its ceiling. Once the
   // total reaches the ceiling the level is closed and the player must move up a level.
@@ -803,9 +819,12 @@
     lowestPlayableLevel: lowestPlayableLevel,
     puzzleLevelsAvailable: puzzleLevelsAvailable,
     puzzleLevel: puzzleLevel,
+    undoPercent: undoPercent,
+    undosAllowed: undosAllowed,
     LEVEL_MULTIPLIER: LEVEL_MULTIPLIER,
     TIME_BONUS: TIME_BONUS,
-    LEVEL_CEILING: LEVEL_CEILING
+    LEVEL_CEILING: LEVEL_CEILING,
+    UNDO_PERCENT: UNDO_PERCENT
   };
 
   var Chess = { Game: Game, AI: AI, perft: perft, generateMoves: generateMoves, Scoring: Scoring };
