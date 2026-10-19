@@ -744,7 +744,9 @@
   function renderGameScore() {
     const m = C.Scoring.levelMultiplier(difficulty);
     const outcome = over.result === 0 ? 0 : (over.result === playerColor ? 1 : -1);
-    const final = C.Scoring.finalScore(gamePoints, outcome, difficulty);
+    const movesPlayed = Math.ceil(game.state.history.length / 2);   // full moves played
+    const bonus = C.Scoring.fastWinBonus(outcome, movesPlayed);
+    const final = C.Scoring.finalScore(gamePoints, outcome, difficulty) + bonus;
     const hintDelta = outcome > 0 ? 3 : outcome === 0 ? 1 : -2;   // win +3, draw +1, loss -2
     const hintsBefore = hintCredits;
     if (!gameSettled) {                 // bank this game's score once
@@ -769,9 +771,12 @@
       : hintsLost > 0
         ? hintsLost + hintWord(hintsLost) + ' lost'
         : 'no hints lost';
+    const bonusText = bonus
+      ? '<span class="detail bonus">+' + bonus + ' fast-win bonus \u2014 won inside ' + C.Scoring.FAST_WIN_MOVES + ' moves</span>'
+      : '';
     gameoverScoreEl.innerHTML = '<span class="final">' + fmtPts(final) + ' game points</span>' +
       '<span class="detail">' + how + '</span>' +
-      '<span class="detail">' + hintText + '</span>';
+      '<span class="detail">' + hintText + '</span>' + bonusText;
   }
 
   function finishGame() {

@@ -813,6 +813,16 @@
     return accumulated;
   }
 
+  // ---- fast-win bonus ----
+  // Winning inside this many full moves pays a flat bonus on top of the settled score.
+  var FAST_WIN_MOVES = 25;
+  var FAST_WIN_BONUS = 200;
+
+  function fastWinBonus(outcome, moves) {
+    var m = Math.floor(+moves) || 0;
+    return (outcome > 0 && m >= 1 && m <= FAST_WIN_MOVES) ? FAST_WIN_BONUS : 0;
+  }
+
   // ---- time bonuses ----
   // A "ply" is a single player turn (1 = White's first move). After the level's
   // warm-up (`after` plies), every `every`-th ply hands `seconds` to the side that
@@ -922,6 +932,7 @@
   var Scoring = {
     levelMultiplier: levelMultiplier,
     finalScore: finalScore,
+    fastWinBonus: fastWinBonus,
     timeBonus: timeBonus,
     computerGetsBonus: computerGetsBonus,
     levelPlayable: levelPlayable,
@@ -932,6 +943,8 @@
     undosAllowed: undosAllowed,
     LEVEL_MULTIPLIER: LEVEL_MULTIPLIER,
     LEVEL_NAMES: LEVEL_NAMES,
+    FAST_WIN_MOVES: FAST_WIN_MOVES,
+    FAST_WIN_BONUS: FAST_WIN_BONUS,
     levelName: levelName,
     TIME_BONUS: TIME_BONUS,
     LEVEL_CEILING: LEVEL_CEILING,
