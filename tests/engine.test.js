@@ -171,17 +171,21 @@ assert.ok(near(Chess.Scoring.finalScore(-9.5, -1, 5), -9.5 / 30), 'a negative to
 console.log('game-point scoring OK (win x, loss /, draw x1)');
 
 // ---- fast-win bonus (Scoring) ----
-// A win inside 25 moves pays a flat 200 on top of the settled score.
+// A win inside 25 moves pays the level's bonus: 100 / 200 / 300 / 400 / 600 / 900.
 assert.strictEqual(Chess.Scoring.FAST_WIN_MOVES, 25);
-assert.strictEqual(Chess.Scoring.FAST_WIN_BONUS, 200);
-assert.strictEqual(Chess.Scoring.fastWinBonus(1, 25), 200);
-assert.strictEqual(Chess.Scoring.fastWinBonus(1, 1), 200);
-assert.strictEqual(Chess.Scoring.fastWinBonus(1, 26), 0);    // one move too slow
-assert.strictEqual(Chess.Scoring.fastWinBonus(1, 60), 0);
-assert.strictEqual(Chess.Scoring.fastWinBonus(0, 10), 0);    // a draw is not a win
-assert.strictEqual(Chess.Scoring.fastWinBonus(-1, 10), 0);   // nor is a loss
-assert.strictEqual(Chess.Scoring.fastWinBonus(1, 0), 0);     // no moves played
-console.log('fast-win bonus OK (200 for a win inside 25 moves)');
+assert.deepStrictEqual(Chess.Scoring.FAST_WIN_BONUS, [100, 200, 300, 400, 600, 900]);
+for (let lvl = 1; lvl <= 6; lvl++) {
+  assert.strictEqual(Chess.Scoring.fastWinBonus(1, 25, lvl), [100, 200, 300, 400, 600, 900][lvl - 1]);
+}
+assert.strictEqual(Chess.Scoring.fastWinBonus(1, 1, 4), 400);
+assert.strictEqual(Chess.Scoring.fastWinBonus(1, 26, 3), 0);    // one move too slow
+assert.strictEqual(Chess.Scoring.fastWinBonus(1, 60, 3), 0);
+assert.strictEqual(Chess.Scoring.fastWinBonus(0, 10, 3), 0);    // a draw is not a win
+assert.strictEqual(Chess.Scoring.fastWinBonus(-1, 10, 3), 0);   // nor is a loss
+assert.strictEqual(Chess.Scoring.fastWinBonus(1, 0, 3), 0);     // no moves played
+assert.strictEqual(Chess.Scoring.fastWinBonus(1, 25, 0), 100);  // clamped low
+assert.strictEqual(Chess.Scoring.fastWinBonus(1, 25, 9), 900);  // clamped high
+console.log('fast-win bonus OK (100/200/300/400/600/900 by level, inside 25 moves)');
 
 // ---- time bonuses (Scoring) ----
 // Level 1: +2 min on every ply from ply 11 on

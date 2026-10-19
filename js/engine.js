@@ -814,13 +814,15 @@
   }
 
   // ---- fast-win bonus ----
-  // Winning inside this many full moves pays a flat bonus on top of the settled score.
+  // Winning inside this many full moves pays the level's bonus on top of the settled
+  // score. The bonus rises with the level: 100 / 200 / 300 / 400 / 600 / 900.
   var FAST_WIN_MOVES = 25;
-  var FAST_WIN_BONUS = 200;
+  var FAST_WIN_BONUS = [100, 200, 300, 400, 600, 900];
 
-  function fastWinBonus(outcome, moves) {
+  function fastWinBonus(outcome, moves, level) {
     var m = Math.floor(+moves) || 0;
-    return (outcome > 0 && m >= 1 && m <= FAST_WIN_MOVES) ? FAST_WIN_BONUS : 0;
+    if (!(outcome > 0 && m >= 1 && m <= FAST_WIN_MOVES)) return 0;
+    return FAST_WIN_BONUS[clampLevel(level) - 1];
   }
 
   // ---- time bonuses ----

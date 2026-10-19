@@ -745,7 +745,7 @@
     const m = C.Scoring.levelMultiplier(difficulty);
     const outcome = over.result === 0 ? 0 : (over.result === playerColor ? 1 : -1);
     const movesPlayed = Math.ceil(game.state.history.length / 2);   // full moves played
-    const bonus = C.Scoring.fastWinBonus(outcome, movesPlayed);
+    const bonus = C.Scoring.fastWinBonus(outcome, movesPlayed, difficulty);
     const final = C.Scoring.finalScore(gamePoints, outcome, difficulty) + bonus;
     const hintDelta = outcome > 0 ? 3 : outcome === 0 ? 1 : -2;   // win +3, draw +1, loss -2
     const hintsBefore = hintCredits;
