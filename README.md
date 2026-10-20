@@ -56,6 +56,7 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 - Move list in SAN with auto-scroll, and (at Masters) the opening name under the board
 - 10-minute clocks per side with time-forfeit detection, plus level-based time bonuses (see below)
 - Undo (takes back both your move and the engine's reply), capped at a share of the moves played so far — **50 / 40 / 30 / 20 / 10 / 5 %** at levels 1–6
+- **Resign** ends a running game at once (with a confirmation) and counts as a loss; **a running game has to be resigned before another can start**, so the New game button stays held until then
 - Promotion picker (with cancel), game-over and new-game dialogs
 - Play as White, Black, or random side; board flip
 - Engine strength is chosen before the game, in the New Game dialog

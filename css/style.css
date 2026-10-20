@@ -365,6 +365,10 @@ footer {
 }
 
 .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* Resign sits on its own row, quiet until you hover it */
+#btn-resign { grid-column: 1 / -1; }
+.btn.danger { border-color: rgba(176, 71, 63, 0.4); color: var(--bad); }
+.btn.danger:hover:not(:disabled) { background: var(--bad-soft); border-color: rgba(176, 71, 63, 0.6); }
 
 .btn {
   padding: 9px 12px;

@@ -99,6 +99,7 @@
             <button id="btn-undo" class="btn">Undo</button>
             <button id="btn-flip" class="btn">Flip</button>
             <button id="btn-hint" class="btn">Hint (0)</button>
+            <button id="btn-resign" class="btn danger">Resign</button>
           </div>
 
           <div class="eval-wrap" id="eval-wrap" title="Engine evaluation">
@@ -201,6 +202,18 @@
     <div class="modal-actions">
       <button id="btn-rematch" class="btn primary">Rematch</button>
       <button id="btn-close-gameover" class="btn">Review board</button>
+    </div>
+  </div>
+</div>
+
+<!-- Resign confirmation -->
+<div id="resign-modal" class="modal hidden">
+  <div class="modal-card">
+    <h3>Resign this game?</h3>
+    <p>The game ends at once and counts as a loss.</p>
+    <div class="modal-actions">
+      <button id="btn-confirm-resign" class="btn danger">Resign</button>
+      <button id="btn-cancel-resign" class="btn">Keep playing</button>
     </div>
   </div>
 </div>

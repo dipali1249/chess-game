@@ -38,6 +38,8 @@
   const btnUndo = $('btn-undo');
   const btnFlip = $('btn-flip');
   const btnHint = $('btn-hint');
+  const btnResign = $('btn-resign');
+  const resignModal = $('resign-modal');
   const btnSound = $('btn-sound');
   const themeSelect = $('theme-select');
   const promotionModal = $('promotion-modal');
@@ -471,6 +473,7 @@
       case 'fifty-move rule': return 'by the fifty-move rule';
       case 'insufficient material': return 'by insufficient material';
       case 'threefold repetition': return 'by threefold repetition';
+      case 'resign': return 'by resignation';
       default: return '';
     }
   }
@@ -494,8 +497,14 @@
     setText(statusEl, checked ? 'Check \u2014 ' + side + ' must respond' : side + ' to move');
   }
 
+  // A game counts as running once a move has been played and it has not finished.
+  function gameInProgress() {
+    return !over && game.state.history.length > 0;
+  }
+
   function renderButtons() {
     const allowed = C.Scoring.undosAllowed(difficulty, playerMoves);
+    const live = gameInProgress();
     btnUndo.disabled = !canUndo();
     btnUndo.title = allowed <= 0
       ? 'Undo \u2014 play a few moves first'
@@ -503,6 +512,10 @@
         ? 'Undo \u2014 no undos left at this level'
         : 'Undo \u2014 ' + (allowed - undosUsed) + ' left this game';
     btnHint.disabled = !!over || thinking || game.state.turn !== playerColor;
+    // a running game has to be resigned before another one can start
+    btnNew.disabled = live;
+    btnNew.title = live ? 'Resign the current game first' : '';
+    btnResign.disabled = !live;
   }
 
   // Undo is allowed for a share of the moves played so far, set by the difficulty
@@ -782,7 +795,11 @@
   function finishGame() {
     playSound('end');
     let title, text;
-    if (over.result === 0) {
+    if (over.reason === 'resign') {
+      title = 'You resigned';
+      gameoverTitle.className = 'loss';
+      text = 'You resigned \u2014 the game counts as a loss.';
+    } else if (over.result === 0) {
       title = 'Draw';
       gameoverTitle.className = 'draw';
       text = 'The game is drawn ' + reasonLabel(over.reason) + '.';
@@ -963,7 +980,19 @@
       if (dragState) e.preventDefault();
     });
 
-    btnNew.addEventListener('click', () => { markDifficultyButtons(); openModal(newgameModal); });
+    btnNew.addEventListener('click', () => {
+      if (gameInProgress()) return;             // resign the running game first
+      markDifficultyButtons();
+      openModal(newgameModal);
+    });
+    btnResign.addEventListener('click', () => { if (gameInProgress()) openModal(resignModal); });
+    $('btn-cancel-resign').addEventListener('click', () => closeModal(resignModal));
+    $('btn-confirm-resign').addEventListener('click', () => {
+      closeModal(resignModal);
+      if (!gameInProgress()) return;
+      over = { over: true, result: -playerColor, reason: 'resign' };
+      finishGame();
+    });
     $('btn-cancel-new').addEventListener('click', () => closeModal(newgameModal));
 
     [segColor, segDiff].forEach((seg) => {
@@ -976,6 +1005,7 @@
     });
 
     $('btn-start').addEventListener('click', () => {
+      if (gameInProgress()) { closeModal(newgameModal); return; }   // resign the running game first
       let color = segValue(segColor);
       if (color === 'r') color = Math.random() < 0.5 ? 'w' : 'b';
       difficulty = +segValue(segDiff);
