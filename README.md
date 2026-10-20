@@ -4,9 +4,9 @@ An advanced, dependency-free chess game with a complete rules engine and a built
 
 ## Play it
 
-Open `index.html` in any browser. No build step, no server, no dependencies.
+Live at **[dipali1249.github.io/chess-game](https://dipali1249.github.io/chess-game/)** — or open `index.html` in any browser. No build step, no server, no dependencies.
 
-To host it online, enable **GitHub Pages** for this repository (Settings → Pages → deploy from the `main` branch) and the game will be live at `https://<your-username>.github.io/chess-game/`.
+It is served by **GitHub Pages** from the `main` branch, so a push to `main` goes live within a minute or two. The stylesheet and scripts carry a `?v=` stamp — **bump it in `index.html` whenever the CSS or JS changes**, otherwise browsers keep serving their cached copy and the change looks like it never landed.
 
 ## Features
 
