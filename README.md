@@ -46,7 +46,7 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 ### Learning platform shell
 - A sidebar that switches between two views — **Play** and **Progress**
 - **Progress** — total points, the current level with a meter to the next ceiling, and hints available, all read live from the browser store
-- A light, editorial theme: serif headings, card-based surfaces and a calm navy accent
+- A dark, warm theme: serif headings, a gold accent and card-based surfaces on a near-black ground, with labels set in a monospace, letter-spaced style
 
 ### Interface
 - Drag-and-drop **and** tap/click-to-move (works on touch)

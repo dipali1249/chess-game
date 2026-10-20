@@ -1,55 +1,57 @@
 /* ============================================================
    Learners Chess — Learning Platform stylesheet
-   Light, academic theme. Serif headings, calm navy accent,
-   card-based surfaces. Board colours stay on the four themes.
+   Dark, warm theme. Serif headings, gold accent, card-based
+   surfaces on a near-black ground. Board colours stay on the
+   four board themes below.
    ============================================================ */
 
 :root {
   /* surfaces */
-  --bg: #f4f5f7;
-  --surface: #ffffff;
-  --surface-2: #fafbfc;
-  --surface-3: #eef0f4;
-  --border: #e3e6ec;
-  --border-strong: #d2d7e0;
+  --bg: #17120e;
+  --surface: #241c15;
+  --surface-2: #2b2219;
+  --surface-3: #1e1712;
+  --border: #3a2e22;
+  --border-strong: #4c3d2d;
 
   /* ink */
-  --text: #1c2230;
-  --text-dim: #5c6675;
-  --text-faint: #8b94a3;
+  --text: #f4ede2;
+  --text-dim: #b5a893;
+  --text-faint: #8a7c69;
 
   /* accent + signals */
-  --accent: #2f4d8f;
-  --accent-2: #4a6fb5;
-  --accent-soft: rgba(47, 77, 143, 0.08);
-  --good: #2f7d52;
-  --good-soft: rgba(47, 125, 82, 0.12);
-  --bad: #b0473f;
-  --bad-soft: rgba(176, 71, 63, 0.12);
-  --warn: #a9761f;
-  --warn-soft: rgba(169, 118, 31, 0.14);
+  --accent: #d8a93b;
+  --accent-2: #e7c468;
+  --accent-soft: rgba(216, 169, 59, 0.14);
+  --good: #86c79a;
+  --good-soft: rgba(134, 199, 154, 0.14);
+  --bad: #e08b7b;
+  --bad-soft: rgba(224, 139, 123, 0.14);
+  --warn: #d8a93b;
+  --warn-soft: rgba(216, 169, 59, 0.14);
 
   /* shape + shadow */
   --radius: 12px;
   --radius-lg: 16px;
-  --shadow-sm: 0 1px 2px rgba(20, 30, 50, 0.05);
-  --shadow: 0 8px 22px rgba(20, 30, 50, 0.07);
-  --shadow-lg: 0 24px 60px rgba(20, 30, 50, 0.18);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 26px 60px rgba(0, 0, 0, 0.62);
 
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 
   /* board (classic) — the four themes below override these */
-  --light: #f0dfc0;
-  --dark: #b3814f;
-  --frame: #6f5334;
-  --dot: rgba(40, 25, 10, 0.24);
-  --coord: rgba(70, 45, 20, 0.55);
-  --last-from: rgba(240, 200, 60, 0.45);
-  --last-to: rgba(240, 200, 60, 0.62);
-  --sel: rgba(47, 77, 143, 0.42);
-  --hint: rgba(60, 170, 110, 0.5);
-  --eval-track: #2c3546;
+  --light: #e9dcc4;
+  --dark: #8b6f4c;
+  --frame: #2b2119;
+  --dot: rgba(30, 20, 10, 0.35);
+  --coord: rgba(60, 40, 20, 0.5);
+  --last-from: rgba(216, 169, 59, 0.42);
+  --last-to: rgba(216, 169, 59, 0.62);
+  --sel: rgba(216, 169, 59, 0.45);
+  --hint: rgba(134, 199, 154, 0.45);
+  --eval-track: #2a2119;
 }
 
 /* Board themes */
@@ -655,3 +657,33 @@ footer {
   .board { width: 100%; }
   .panel { width: auto; flex: none; }
 }
+
+/* ============================================================
+   Dark theme refinements
+   ============================================================ */
+/* labels take a monospace, letter-spaced look; headings stay serif and take the gold */
+.brand-sub, .option-label, .stat-label, .movelist-head, .eval-verdict,
+.view-sub, .modal-note { font-family: var(--mono); letter-spacing: 0.13em; }
+.panel-card-head h3, .modal-card h3, .movelist-head { color: var(--accent); }
+.movelist-head { font-size: 0.7rem; text-transform: uppercase; }
+
+/* status reads as a left-bordered card */
+.status-row { text-align: left; }
+.status {
+  display: block; text-align: left; border-radius: 10px; min-width: 0;
+  padding: 12px 16px; border-left: 3px solid var(--accent);
+  background: var(--surface-2); box-shadow: none;
+}
+
+/* primary button: solid gold on dark ink */
+.btn.primary {
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  color: #241c15; border-color: transparent;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+.btn.primary:hover:not(:disabled) { box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45); }
+
+/* the evaluation fill reads as gold */
+.eval-fill { background: linear-gradient(90deg, var(--accent-2), var(--accent)); }
+.eval-mid { background: rgba(0, 0, 0, 0.4); }
+.board-frame { box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5); }
