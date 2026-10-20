@@ -297,8 +297,12 @@ footer {
 }
 /* A text-shadow stands in for a drop-shadow filter: the same lift, far cheaper to paint
    (a filter forces an offscreen pass for each of the 32 pieces). */
-.piece.white { color: #fbfbf7; text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5), 0 0 2px #000, 0 0 4px rgba(0, 0, 0, 0.6); }
-.piece.black { color: #26242b; text-shadow: 0 2px 3px rgba(0, 0, 0, 0.4), 0 0 2px rgba(255, 255, 255, 0.5), 0 0 3px rgba(0, 0, 0, 0.25); }
+/* White reads as an outline, Black as a solid, both in the same dark ink — with a soft
+   light halo so they stay legible on the darker squares. */
+.piece.white, .piece.black {
+  color: #1c1712;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 0 2px rgba(255, 255, 255, 0.45);
+}
 .piece.dragging-origin { opacity: 0.25; }
 .piece.ghost {
   position: fixed; z-index: 200; pointer-events: none;
@@ -574,8 +578,7 @@ footer {
   font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "DejaVu Sans", sans-serif;
 }
 .promo-btn:hover { background: var(--surface-3); transform: translateY(-3px); }
-.promo-btn.white-piece { color: #fbfbf7; text-shadow: 0 0 3px #000; }
-.promo-btn.black-piece { color: #26242b; text-shadow: 0 0 2px rgba(255, 255, 255, 0.5); }
+.promo-btn.white-piece, .promo-btn.black-piece { color: #1c1712; }
 
 #gameover-title { font-size: 1.5rem; }
 #gameover-title.win { color: var(--good); }

@@ -3,7 +3,10 @@
   'use strict';
 
   const C = window.Chess;
+  // Outline pieces for White, solid pieces for Black — the classic diagram style.
   const GLYPH = { 1: '\u265F', 2: '\u265E', 3: '\u265D', 4: '\u265C', 5: '\u265B', 6: '\u265A' };
+  const GLYPH_WHITE = { 1: '\u2659', 2: '\u2658', 3: '\u2657', 4: '\u2656', 5: '\u2655', 6: '\u2654' };
+  const glyphFor = (piece) => (piece > 0 ? GLYPH_WHITE : GLYPH)[Math.abs(piece)];
   const PIECE_NAME = { 1: 'pawn', 2: 'knight', 3: 'bishop', 4: 'rook', 5: 'queen', 6: 'king' };
   const VALS = { 1: 1, 2: 3, 3: 3, 4: 5, 5: 9, 6: 0 };
   const CAP_ORDER = [5, 4, 3, 2, 1];        // captured material, highest value first
@@ -180,7 +183,7 @@
         pieceEls[sq] = el;
       }
       el.className = 'piece ' + (p > 0 ? 'white' : 'black');
-      el.textContent = GLYPH[Math.abs(p)];
+      el.textContent = glyphFor(p);
     }
   }
 
@@ -271,12 +274,13 @@
   // ---------- captured material ----------
   // Each strip shows what that side has taken, grouped by piece with a count, and
   // the side that is ahead on material carries a "+n" badge.
-  function capturedChips(counts) {
+  function capturedChips(counts, white) {
+    const set = white ? GLYPH_WHITE : GLYPH;     // the chips take the captured pieces' own colour
     let html = '';
     for (const t of CAP_ORDER) {
       const n = counts[t] || 0;
       if (!n) continue;
-      html += '<span class="cap-chip">' + GLYPH[t] + (n > 1 ? '<i>' + n + '</i>' : '') + '</span>';
+      html += '<span class="cap-chip">' + set[t] + (n > 1 ? '<i>' + n + '</i>' : '') + '</span>';
     }
     return html || '<span class="cap-empty">\u2014</span>';
   }
@@ -311,8 +315,8 @@
     const botMat = playerColor === 1 ? matW : matB;
     const lead = botMat - topMat;                 // positive while the player is ahead
     const badge = (v) => (v > 0 ? '<span class="material-diff">+' + v + '</span>' : '');
-    capturedTopEl.innerHTML = capturedChips(topCounts) + badge(-lead);
-    capturedBottomEl.innerHTML = capturedChips(botCounts) + badge(lead);
+    capturedTopEl.innerHTML = capturedChips(topCounts, playerColor === 1) + badge(-lead);
+    capturedBottomEl.innerHTML = capturedChips(botCounts, playerColor === -1) + badge(lead);
     capturedTopEl.title = capturedTitle(topCounts, topMat);
     capturedBottomEl.title = capturedTitle(botCounts, botMat);
   }
@@ -738,7 +742,7 @@
     [5, 4, 3, 2].forEach((type) => {
       const b = document.createElement('button');
       b.className = 'promo-btn ' + (color === 'white' ? 'white-piece' : 'black-piece');
-      b.textContent = GLYPH[type];
+      b.textContent = (playerColor === 1 ? GLYPH_WHITE : GLYPH)[type];
       b.title = PIECE_NAME[type];
       b.addEventListener('click', () => {
         closeModal(promotionModal);

@@ -50,6 +50,7 @@ To host it online, enable **GitHub Pages** for this repository (Settings → Pag
 
 ### Interface
 - Drag-and-drop **and** tap/click-to-move (works on touch)
+- **Classic pieces:** outline for White, solid for Black, both in one dark ink, so the board reads like a printed diagram (captured-material chips and the promotion picker follow the same convention)
 - Legal-move dots, capture rings, last-move and check highlights
 - **Live evaluation bar:** a white fill for White's share of the position on a dark track for Black's, with a tick at the halfway mark; the number and a plain-English verdict ("You are better", "Engine is winning", "Level") are read from your side, a forced mate shows as **#3** and pegs the bar, and once the game ends it settles to **1-0** / **0-1** / **½**
 - A **captured-material strip** under each player: the pieces that side has taken, grouped by piece with a count when there is more than one, highest value first, a green **+n** badge on whoever is ahead on material, and a hover tooltip spelling out the tally and its point value
