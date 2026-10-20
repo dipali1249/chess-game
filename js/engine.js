@@ -825,6 +825,16 @@
     return FAST_WIN_BONUS[clampLevel(level) - 1];
   }
 
+  // ---- resign penalty ----
+  // Conceding costs a flat deduction from the total, by level:
+  // 10 / 20 / 30 / 40 / 35 / 25. A resignation is scored on its own — the
+  // game's accumulated points are not counted.
+  var RESIGN_PENALTY = [10, 20, 30, 40, 35, 25];
+
+  function resignPenalty(level) {
+    return RESIGN_PENALTY[clampLevel(level) - 1];
+  }
+
   // ---- time bonuses ----
   // A "ply" is a single player turn (1 = White's first move). After the level's
   // warm-up (`after` plies), every `every`-th ply hands `seconds` to the side that
@@ -935,6 +945,7 @@
     levelMultiplier: levelMultiplier,
     finalScore: finalScore,
     fastWinBonus: fastWinBonus,
+    resignPenalty: resignPenalty,
     timeBonus: timeBonus,
     computerGetsBonus: computerGetsBonus,
     levelPlayable: levelPlayable,
@@ -947,6 +958,7 @@
     LEVEL_NAMES: LEVEL_NAMES,
     FAST_WIN_MOVES: FAST_WIN_MOVES,
     FAST_WIN_BONUS: FAST_WIN_BONUS,
+    RESIGN_PENALTY: RESIGN_PENALTY,
     levelName: levelName,
     TIME_BONUS: TIME_BONUS,
     LEVEL_CEILING: LEVEL_CEILING,

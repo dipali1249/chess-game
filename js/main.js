@@ -763,7 +763,12 @@
     const outcome = over.result === 0 ? 0 : (over.result === playerColor ? 1 : -1);
     const movesPlayed = Math.ceil(game.state.history.length / 2);   // full moves played
     const bonus = C.Scoring.fastWinBonus(outcome, movesPlayed, difficulty);
-    const final = C.Scoring.finalScore(gamePoints, outcome, difficulty) + bonus;
+    // A resignation is scored on its own: a flat deduction by level, and the game's
+    // accumulated points are not counted.
+    const resigned = over.reason === 'resign';
+    const final = resigned
+      ? -C.Scoring.resignPenalty(difficulty)
+      : C.Scoring.finalScore(gamePoints, outcome, difficulty) + bonus;
     const hintDelta = outcome > 0 ? 3 : outcome === 0 ? 1 : -2;   // win +3, draw +1, loss -2
     const hintsBefore = hintCredits;
     if (!gameSettled) {                 // bank this game's score once
@@ -774,11 +779,13 @@
       updateScoreUI();
       updateHintUI();
     }
-    const how = outcome > 0
-      ? 'accumulated ' + fmtPts(gamePoints) + ' \u00d7' + m + ' for the win'
-      : outcome < 0
-        ? 'accumulated ' + fmtPts(gamePoints) + ' \u00f7' + m + ' for the loss'
-        : 'accumulated ' + fmtPts(gamePoints) + ' \u00d71 for the draw';
+    const how = resigned
+      ? 'resigned \u2014 level ' + difficulty + ' penalty'
+      : outcome > 0
+        ? 'accumulated ' + fmtPts(gamePoints) + ' \u00d7' + m + ' for the win'
+        : outcome < 0
+          ? 'accumulated ' + fmtPts(gamePoints) + ' \u00f7' + m + ' for the loss'
+          : 'accumulated ' + fmtPts(gamePoints) + ' \u00d71 for the draw';
     // the hint line never prints a negative number — say the change in words
     const hintsGained = Math.max(0, hintCredits - hintsBefore);
     const hintsLost = Math.max(0, hintsBefore - hintCredits);
@@ -802,7 +809,7 @@
     if (over.reason === 'resign') {
       title = 'You resigned';
       gameoverTitle.className = 'loss';
-      text = 'You resigned \u2014 the game counts as a loss.';
+      text = 'You resigned \u2014 it costs you ' + C.Scoring.resignPenalty(difficulty) + ' points.';
     } else if (over.result === 0) {
       title = 'Draw';
       gameoverTitle.className = 'draw';

@@ -64,6 +64,7 @@ It is served by **GitHub Pages** from the `main` branch, so a push to `main` goe
 - A large board (up to ~720px) that scales with the window
 - **Game points:** the evaluation of every position you pass through (the same figure as the eval bar) is accumulated live, then settled at the end — a **win multiplies** the total by the level's stake (×5 / ×10 / ×15 / ×20 / ×30 / ×40) and **always pays positively**, so winning on a negative total flips it positive; a **loss divides** it by the same stake, a **draw leaves it as it is** (×1)
 - **Fast-win bonus:** winning inside **25 moves** adds a bonus on top of the settled score, rising with the level — **+100 / +200 / +300 / +400 / +600 / +900** at levels 1–6; the game-over dialog shows it when it lands
+- **Resign penalty:** conceding costs a flat deduction by level — **−10 / −20 / −30 / −40 / −35 / −25**; a resignation is scored on its own, so the game's accumulated points are not counted
 - Four board themes (Classic, Emerald, Ocean, Midnight)
 - Synthesized sound effects (move, capture, castle, check, game end) via Web Audio
 - Fully responsive layout for phones and desktops

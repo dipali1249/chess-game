@@ -187,6 +187,16 @@ assert.strictEqual(Chess.Scoring.fastWinBonus(1, 25, 0), 100);  // clamped low
 assert.strictEqual(Chess.Scoring.fastWinBonus(1, 25, 9), 900);  // clamped high
 console.log('fast-win bonus OK (100/200/300/400/600/900 by level, inside 25 moves)');
 
+// ---- resign penalty (Scoring) ----
+// Conceding costs a flat deduction by level: 10 / 20 / 30 / 40 / 35 / 25.
+assert.deepStrictEqual(Chess.Scoring.RESIGN_PENALTY, [10, 20, 30, 40, 35, 25]);
+for (let lvl = 1; lvl <= 6; lvl++) {
+  assert.strictEqual(Chess.Scoring.resignPenalty(lvl), [10, 20, 30, 40, 35, 25][lvl - 1]);
+}
+assert.strictEqual(Chess.Scoring.resignPenalty(0), 10);   // clamped low
+assert.strictEqual(Chess.Scoring.resignPenalty(9), 25);   // clamped high
+console.log('resign penalty OK (10/20/30/40/35/25 by level)');
+
 // ---- time bonuses (Scoring) ----
 // Level 1: +2 min on every ply from ply 11 on
 assert.strictEqual(Chess.Scoring.timeBonus(1, 10), 0);
